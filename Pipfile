@@ -4,8 +4,10 @@ url = "https://pypi.python.org/simple"
 name = "pypi"
 
 [packages]
+
 flask = "*"
 "python-dotenv" = "*"
+"psycopg2" = "*"
 
 
 [requires]
