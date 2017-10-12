@@ -1,5 +1,6 @@
 import os
 import psycopg2
+from hashlib import sha256
 from dotenv import load_dotenv, find_dotenv
 from flask import Flask, g
 load_dotenv(find_dotenv())
@@ -20,6 +21,10 @@ def db():
     if not hasattr(g, 'db'):
         g.db = connect_db()
     return g.db
+
+
+def passhash(password):
+    return sha256(bytes(password + os.environ.get('PASSWORD_SALT', ''))).hexdigest()
 
 
 @app.route('/')
