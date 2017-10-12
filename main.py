@@ -174,5 +174,27 @@ def mypage():
         return redirect(url_for('userpage', username=username))
 
 
+@app.route('/setting', methods=['GET', 'POST'])
+def setting():
+    if request.method == 'POST':
+        if not logged_in()['logged_in']:
+            flash('You are not logged in')
+            return redirect(url_for('login'))
+        description = request.form['description']
+        c = cursor()
+        c.execute('UPDATE users SET description = %s '
+                  'WHERE id = %s',
+                  (description, session['user_id'],))
+        db().commit()
+        flash('Settings changed')
+        return redirect(url_for('setting'))
+    else:
+        if not logged_in()['logged_in']:
+            flash('You are not logged in')
+            return redirect(url_for('login'))
+        user = current_user()['current_user']
+        return render_template('setting.html', user=user)
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
