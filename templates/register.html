@@ -1,12 +1,18 @@
 {% extends "layout.html" %}
 {% block body %}
-  <form action="{{ url_for('register_user') }}" method="POST">
-    <label for="username">Username <strong>(required)</strong>:</label>
-    <input type="text" name="username" maxlength="64">
-    <label for="password">Password <strong>(required)</strong>:</label>
-    <input type="password" name="password" maxlength="128">
-    <label for="description">Description (optional): </label>
-    <textarea name="description" rows="4" cols="20"></textarea>
-    <input type="submit" value="Register">
+  <form class="form-horizontal" action="{{ url_for('register_user') }}" method="POST">
+    <div class="form-group">
+      <label for="username" class="col-lg-2 control-label">Username <strong>(required)</strong></label>
+      <input type="text" name="username" maxlength="64" placeholder="Username">
+    </div>
+    <div class="form-group">
+      <label for="password" class="col-lg-2 control-label">Password <strong>(required)</strong></label>
+      <input type="password" name="password" maxlength="128">
+    </div>
+    <div class="form-group">
+      <label for="description" class="col-lg-2 control-label">Description (optional)</label>
+      <textarea name="description" rows="4" cols="20"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Register</button>
   </form>
 {% endblock %}
