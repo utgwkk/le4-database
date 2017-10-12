@@ -5,14 +5,14 @@ from hashlib import sha256
 from dotenv import load_dotenv, find_dotenv
 from flask import (
     Flask,
-    g,
-    request,
-    redirect,
-    url_for,
-    flash,
-    render_template,
-    session,
     abort,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
 )
 load_dotenv(find_dotenv())
 app = Flask(__name__)
