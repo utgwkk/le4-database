@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block body %}
+<dl>
+  <dt>Username</dt>
+  <dd>{{ user['username'] }}</dd>
+  <dt>Description</dt>
+  <dd>{{ user['description'] or 'No description set.' }}</dd>
+</dl>
+{% endblock %}

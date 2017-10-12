@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Suxiv</title>
+  </head>
+  <body>
+    <h1>Suxiv</h1>
+    <div>
+      {% if logged_in %}
+      <a href="{{ url_for('mypage') }}">{{ current_user['username'] }}</a>
+      <a href="{{ url_for('logout') }}">logout</a>
+      {% else %}
+      <a href="{{ url_for('login') }}">login</a>
+      <a href="{{ url_for('register') }}">register</a>
+      {% endif %}
+    </div>
+    {% for message in get_flashed_messages() %}
+    <div>{{ message }}</div>
+    {% endfor %}
+    {% block body %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block body %}
+  <form action="{{ url_for('register_user') }}" method="POST">
+    <label for="username">Username <strong>(required)</strong>:</label>
+    <input type="text" name="username" maxlength="64">
+    <label for="password">Password <strong>(required)</strong>:</label>
+    <input type="password" name="password" maxlength="128">
+    <label for="description">Description (optional): </label>
+    <textarea rows="4" cols="20"></textarea>
+    <input type="submit" value="Register">
+  </form>
+{% endblock %}
