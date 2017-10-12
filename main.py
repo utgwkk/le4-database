@@ -88,13 +88,13 @@ def get_username_by_user_id(user_id):
 
 @app.context_processor
 def logged_in():
-    return {'logged_in': session['user_id'] is not None}
+    return {'logged_in': 'user_id' in session}
 
 
 @app.context_processor
 def current_user():
     c = cursor()
-    c.execute('SELECT * FROM users WHERE id = %s', (session['user_id'],))
+    c.execute('SELECT * FROM users WHERE id = %s', (session.get('user_id'),))
     return {'current_user': c.fetchone()}
 
 
@@ -166,7 +166,7 @@ def userpage(username):
 
 @app.route('/mypage')
 def mypage():
-    if not session['user_id']:
+    if not logged_in()['logged_in']:
         flash('You are not logged in')
         return redirect(url_for('login'))
     else:
