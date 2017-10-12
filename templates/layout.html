@@ -5,7 +5,7 @@
     <title>Suxiv</title>
   </head>
   <body>
-    <h1>Suxiv</h1>
+    <h1><a href="{{ url_for('index') }}">Suxiv</a></h1>
     <div>
       {% if logged_in %}
       <a href="{{ url_for('mypage') }}">{{ current_user['username'] }}</a>
