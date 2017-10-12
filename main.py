@@ -107,8 +107,7 @@ def close_db(error):
 
 @app.route('/')
 def index():
-    db()
-    return '<H1>It works!</H1>'
+    return render_template('index.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
