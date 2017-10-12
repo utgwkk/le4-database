@@ -11,7 +11,8 @@ from flask import (
     url_for,
     flash,
     render_template,
-    session
+    session,
+    abort,
 )
 load_dotenv(find_dotenv())
 app = Flask(__name__)
@@ -153,14 +154,24 @@ def register_user():
         return render_template('register.html')
 
 
+@app.route('/@<string:username>')
+def userpage(username):
+    c = cursor()
+    c.execute('SELECT * FROM users WHERE username = %s', (username,))
+    user = c.fetchone()
+    if user is None:
+        abort(404)
+    return render_template('user.html', user=user)
+
+
 @app.route('/mypage')
 def mypage():
     if not session['user_id']:
         flash('You are not logged in')
         return redirect(url_for('login'))
     else:
-        return render_template('user.html',
-                               user=current_user()['current_user'])
+        username = get_username_by_user_id(session['user_id'])
+        return redirect(url_for('userpage', username=username))
 
 
 if __name__ == '__main__':
