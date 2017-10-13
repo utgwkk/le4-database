@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c24308415ba1ed9126347c3581c8b39a181f2ccfd5a3bbb19bd5663a7d9d5412"
+            "sha256": "5ca7bb208e555c063511298a921f25c1a3603f064ad902cc834e46f7e9c84a7f"
         },
         "host-environment-markers": {
             "implementation_name": "cpython",
@@ -9,9 +9,9 @@
             "os_name": "posix",
             "platform_machine": "x86_64",
             "platform_python_implementation": "CPython",
-            "platform_release": "4.8.0-2-amd64",
+            "platform_release": "4.4.0-0.bpo.1-amd64",
             "platform_system": "Linux",
-            "platform_version": "#1 SMP Debian 4.8.11-1 (2016-12-02)",
+            "platform_version": "#1 SMP Debian 4.4.6-1~bpo8+1 (2016-03-20)",
             "python_full_version": "3.6.0",
             "python_version": "3.6",
             "sys_platform": "linux"
@@ -114,6 +114,14 @@
         }
     },
     "develop": {
+        "nose": {
+            "hashes": [
+                "sha256:dadcddc0aefbf99eea214e0f1232b94f2fa9bd98fa8353711dacb112bfcbbb2a",
+                "sha256:9ff7c6cc443f8c51994b34a667bbcf45afd6d945be7477b52e97516fd17c53ac",
+                "sha256:f1bffef9cbc82628f6e7d7b40d7e255aefaa1adb6a1b1d26c69a8b79e6208a98"
+            ],
+            "version": "==1.3.7"
+        },
         "pycodestyle": {
             "hashes": [
                 "sha256:6c4245ade1edfad79c3446fadfc96b0de2759662dc29d07d80a6f27ad1ca6ba9",
