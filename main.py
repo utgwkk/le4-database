@@ -6,6 +6,7 @@ from hashlib import sha256
 from dotenv import load_dotenv, find_dotenv
 from flask import (
     Flask,
+    Response,
     abort,
     flash,
     g,
@@ -197,6 +198,15 @@ def setting():
             return redirect(url_for('login'))
         user = current_user()['current_user']
         return render_template('setting.html', user=user)
+
+
+@app.route('/initialize')
+def initialize():
+    c = cursor()
+    c.execute('TRUNCATE users')
+    c.execute("SELECT SETVAL ('users_id_seq', 1, false)")
+    db().commit()
+    return Response('ok', mimetype='text/plain')
 
 
 if __name__ == '__main__':
