@@ -200,10 +200,10 @@ def setting():
 
 @app.route('/initialize')
 def initialize():
-    c = cursor()
-    c.execute('TRUNCATE users')
-    c.execute("SELECT SETVAL ('users_id_seq', 1, false)")
-    db().commit()
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('TRUNCATE users')
+        c.execute("SELECT SETVAL ('users_id_seq', 1, false)")
     return Response('ok', mimetype='text/plain')
 
 
