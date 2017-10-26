@@ -30,6 +30,11 @@ class AppTest(unittest.TestCase):
     def logout(self):
         self.client.post('/logout')
 
+    def change_setting(self, description):
+        return self.client.post('/setting', data={
+            'description': description,
+        }, follow_redirects=True)
+
     def test_index(self):
         self.client.get('/')
 
@@ -42,6 +47,12 @@ class AppTest(unittest.TestCase):
         self.logout()
         res = self.login('alice', 'alicealice')
         self.assertIn(b'@alice', res.data)
+
+    def test_change_setting(self):
+        self.register('alice', 'alicealice')
+
+        res = self.change_setting('hogefuga')
+        self.assertIn(b'hogefuga', res.data)
 
 
 if __name__ == '__main__':
