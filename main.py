@@ -183,11 +183,11 @@ def setting():
             flash('You are not logged in')
             return redirect(url_for('login'))
         description = request.form['description']
-        c = cursor()
-        c.execute('UPDATE users SET description = %s '
-                  'WHERE id = %s',
-                  (description, session['user_id'],))
-        db().commit()
+        with db() as conn:
+            c = conn.cursor()
+            c.execute('UPDATE users SET description = %s '
+                      'WHERE id = %s',
+                      (description, session['user_id'],))
         flash('Settings changed')
         return redirect(url_for('setting'))
     else:
