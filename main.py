@@ -148,7 +148,9 @@ def register_user():
             return redirect(url_for('register_user'))
         create_user(username, password, description)
         c = cursor()
-        session['user_id'] = c.lastrowid
+        c.execute('SELECT MAX(id) AS id FROM users')
+        session['user_id'] = c.fetchone()['id']
+        print(session['user_id'])
         flash('Registration succeeded')
         return redirect(url_for('mypage'))
     else:
