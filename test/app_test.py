@@ -7,9 +7,6 @@ class AppTest(unittest.TestCase):
     def setUp(self):
         main.app.testing = True
         self.client = main.app.test_client()
-
-        # use testing DB
-        os.environ['POSTGRESQL_DB'] = 'test_utgwkk'
         self.initialize()
 
     def tearDown(self):

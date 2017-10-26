@@ -22,13 +22,22 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
 
 def connect_db():
-    return psycopg2.connect(
-        host=os.environ.get('POSTGRESQL_HOST', 'localhost'),
-        port=os.environ.get('POSTGRESQL_PORT', 5432),
-        user=os.environ.get('POSTGRESQL_USER'),
-        password=os.environ.get('POSTGRESQL_PASS'),
-        dbname=os.environ.get('POSTGRESQL_DB'),
-    )
+    if hasattr(app, 'testing') and app.testing:
+        return psycopg2.connect(
+            host=os.environ.get('POSTGRESQL_HOST', 'localhost'),
+            port=os.environ.get('POSTGRESQL_PORT', 5432),
+            user=os.environ.get('POSTGRESQL_USER'),
+            password=os.environ.get('POSTGRESQL_PASS'),
+            dbname=os.environ.get('TEST_POSTGRESQL_DB'),
+        )
+    else:
+        return psycopg2.connect(
+            host=os.environ.get('POSTGRESQL_HOST', 'localhost'),
+            port=os.environ.get('POSTGRESQL_PORT', 5432),
+            user=os.environ.get('POSTGRESQL_USER'),
+            password=os.environ.get('POSTGRESQL_PASS'),
+            dbname=os.environ.get('POSTGRESQL_DB'),
+        )
 
 
 def db():
