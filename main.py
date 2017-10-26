@@ -1,4 +1,5 @@
 import os
+import random
 import psycopg2
 import psycopg2.extras
 from hashlib import sha256
@@ -39,16 +40,17 @@ def cursor():
     return db().cursor(cursor_factory=psycopg2.extras.DictCursor)
 
 
-def passhash(password):
-    return sha256(bytes(password + os.environ.get('PASSWORD_SALT', ''),
-                        encoding='utf-8')).hexdigest()
+def passhash(password, salt):
+    return sha256(bytes(password + salt, encoding='utf-8')).hexdigest()
 
 
 def create_user(username, password, description):
+    alphabets = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    salt = ''.join([random.choice(alphabets) for _ in range(32)])
     c = cursor()
-    c.execute('INSERT INTO users (username, password, description) '
-              'VALUES (%s, %s, %s)',
-              (username, passhash(password), description))
+    c.execute('INSERT INTO users (username, salt, password, description) '
+              'VALUES (%s, %s, %s, %s)',
+              (username, salt, passhash(password, salt), description))
     db().commit()
 
 
@@ -68,10 +70,10 @@ def validate_user_params(username, password):
 
 def authenticate(username, password):
     c = cursor()
-    c.execute('SELECT COUNT(*) AS cnt FROM users '
-              'WHERE username = %s AND password = %s',
-              (username, passhash(password)))
-    return c.fetchone()['cnt'] > 0
+    c.execute('SELECT password, salt FROM users WHERE username = %s',
+              (username,))
+    row = c.fetchone()
+    return passhash(password, row['salt']) == row['password']
 
 
 def get_user_id_by_username(username):
