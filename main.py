@@ -45,16 +45,6 @@ def passhash(password, salt):
     return sha256(bytes(password + salt, encoding='utf-8')).hexdigest()
 
 
-def create_user(username, password, description):
-    alphabets = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    salt = ''.join([random.choice(alphabets) for _ in range(32)])
-    c = cursor()
-    c.execute('INSERT INTO users (username, salt, password, description) '
-              'VALUES (%s, %s, %s, %s)',
-              (username, salt, passhash(password, salt), description))
-    db().commit()
-
-
 class ValidationError(Exception):
     def __init__(self, message):
         self.message = message
@@ -147,10 +137,14 @@ def register_user():
         except ValidationError as e:
             flash(e.message)
             return redirect(url_for('register_user'))
-        create_user(username, password, description)
+        alphabets = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        salt = ''.join([random.choice(alphabets) for _ in range(32)])
         c = cursor()
-        c.execute('SELECT MAX(id) AS id FROM users')
-        session['user_id'] = c.fetchone()['id']
+        c.execute('INSERT INTO users (username, salt, password, description) '
+                  'VALUES (%s, %s, %s, %s)',
+                  (username, salt, passhash(password, salt), description))
+        db().commit()
+        session['user_id'] = c.lastrowid
         print(session['user_id'])
         flash('Registration succeeded')
         return redirect(url_for('mypage'))
