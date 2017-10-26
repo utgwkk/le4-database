@@ -141,15 +141,14 @@ def register_user():
             return redirect(url_for('register_user'))
         alphabets = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         salt = ''.join([random.choice(alphabets) for _ in range(32)])
-        conn = db()
-        c = cursor()
-        c.execute(
-            'INSERT INTO users (username, salt, password, description) '
-            'VALUES (%s, %s, %s, %s) RETURNING id',
-            (username, salt, passhash(password, salt), description)
-        )
-        conn.commit()
-        lastrowid = c.fetchone()['id']
+        with db() as conn:
+            c = conn.cursor()
+            c.execute(
+                'INSERT INTO users (username, salt, password, description) '
+                'VALUES (%s, %s, %s, %s) RETURNING id',
+                (username, salt, passhash(password, salt), description)
+            )
+        lastrowid = c.fetchone()[0]
         session['user_id'] = lastrowid
         flash('Registration succeeded')
         return redirect(url_for('mypage'))
