@@ -112,10 +112,10 @@ def login():
         password = request.form.get('password', '')
         if authenticate(username, password):
             session['user_id'] = get_user_id_by_username(username)
-            flash('Login succeeded')
+            flash('Login succeeded', 'info')
             return redirect(url_for('mypage'))
         else:
-            flash('Login failed')
+            flash('Login failed', 'error')
             return redirect(url_for('login'))
     else:
         return render_template('login.html')
@@ -124,7 +124,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
-    flash('You are not logged in')
+    flash('You are not logged in', 'info')
     return redirect(url_for('login'))
 
 
@@ -137,7 +137,7 @@ def register_user():
         try:
             validate_user_params(username, password)
         except ValidationError as e:
-            flash(e.message)
+            flash(e.message, 'error')
             return redirect(url_for('register_user'))
         alphabets = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         salt = ''.join([random.choice(alphabets) for _ in range(32)])
@@ -150,7 +150,7 @@ def register_user():
             )
         lastrowid = c.fetchone()[0]
         session['user_id'] = lastrowid
-        flash('Registration succeeded')
+        flash('Registration succeeded', 'info')
         return redirect(url_for('mypage'))
     else:
         return render_template('register.html')
@@ -169,7 +169,7 @@ def userpage(username):
 @app.route('/mypage')
 def mypage():
     if not logged_in()['logged_in']:
-        flash('You are not logged in')
+        flash('You are not logged in', 'info')
         return redirect(url_for('login'))
     else:
         username = get_username_by_user_id(session['user_id'])
@@ -180,7 +180,7 @@ def mypage():
 def setting():
     if request.method == 'POST':
         if not logged_in()['logged_in']:
-            flash('You are not logged in')
+            flash('You are not logged in', 'info')
             return redirect(url_for('login'))
         description = request.form['description']
         with db() as conn:
@@ -188,11 +188,11 @@ def setting():
             c.execute('UPDATE users SET description = %s '
                       'WHERE id = %s',
                       (description, session['user_id'],))
-        flash('Settings changed')
+        flash('Settings changed', 'info')
         return redirect(url_for('setting'))
     else:
         if not logged_in()['logged_in']:
-            flash('You are not logged in')
+            flash('You are not logged in', 'info')
             return redirect(url_for('login'))
         user = current_user()['current_user']
         return render_template('setting.html', user=user)
