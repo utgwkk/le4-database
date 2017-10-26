@@ -91,13 +91,6 @@ def current_user():
     return {'current_user': c.fetchone()}
 
 
-@app.teardown_appcontext
-def close_db(error):
-    if hasattr(g, 'db'):
-        g.db.close()
-        del g.db
-
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -139,13 +132,16 @@ def register_user():
             return redirect(url_for('register_user'))
         alphabets = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         salt = ''.join([random.choice(alphabets) for _ in range(32)])
+        conn = db()
         c = cursor()
-        c.execute('INSERT INTO users (username, salt, password, description) '
-                  'VALUES (%s, %s, %s, %s)',
-                  (username, salt, passhash(password, salt), description))
-        db().commit()
-        session['user_id'] = c.lastrowid
-        print(session['user_id'])
+        c.execute(
+            'INSERT INTO users (username, salt, password, description) '
+            'VALUES (%s, %s, %s, %s) RETURNING id',
+            (username, salt, passhash(password, salt), description)
+        )
+        conn.commit()
+        lastrowid = c.fetchone()['id']
+        session['user_id'] = lastrowid
         flash('Registration succeeded')
         return redirect(url_for('mypage'))
     else:
