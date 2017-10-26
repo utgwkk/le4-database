@@ -15,14 +15,32 @@ class AppTest(unittest.TestCase):
     def initialize(self):
         self.client.get('/initialize')
 
+    def register(self, username, password):
+        return self.client.post('/register', data={
+            'username': username,
+            'password': password,
+        }, follow_redirects=True)
+
+    def login(self, username, password):
+        return self.client.post('/login', data={
+            'username': username,
+            'password': password,
+        }, follow_redirects=True)
+
+    def logout(self):
+        self.client.post('/logout')
+
     def test_index(self):
         self.client.get('/')
 
     def test_register(self):
-        res = self.client.post('/register', data={
-            'username': 'alice',
-            'password': 'alicealice',
-        }, follow_redirects=True)
+        # Can register
+        res = self.register('alice', 'alicealice')
+        self.assertIn(b'@alice', res.data)
+
+        # Can logout and login again
+        self.logout()
+        res = self.login('alice', 'alicealice')
         self.assertIn(b'@alice', res.data)
 
 
