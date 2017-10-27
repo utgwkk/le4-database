@@ -2,6 +2,7 @@ import os
 import random
 import psycopg2
 import psycopg2.extras
+import psycopg2.errorcodes
 from functools import wraps
 from hashlib import sha256
 from dotenv import load_dotenv, find_dotenv
@@ -155,11 +156,18 @@ def register_user():
         salt = ''.join([random.choice(alphabets) for _ in range(32)])
         with db() as conn:
             c = conn.cursor()
-            c.execute(
-                'INSERT INTO users (username, salt, password, description) '
-                'VALUES (%s, %s, %s, %s) RETURNING id',
-                (username, salt, passhash(password, salt), description)
-            )
+            try:
+                c.execute(
+                    'INSERT INTO users (username, salt, password, description) '
+                    'VALUES (%s, %s, %s, %s) RETURNING id',
+                    (username, salt, passhash(password, salt), description)
+                )
+            except psycopg2.Error as e:
+                if e.pgcode == psycopg2.errorcodes.UNIQUE_VIOLATION:
+                    flash(f'The username @{username} has already taken', 'error')
+                else:
+                    flash(f'Unknown error: {e.pgerror}', 'error')
+                return redirect(url_for('register_user'))
         lastrowid = c.fetchone()[0]
         session['user_id'] = lastrowid
         flash('Registration succeeded', 'info')

@@ -63,6 +63,12 @@ class AppTest(unittest.TestCase):
         res = self.client.get('/setting', follow_redirects=True)
         self.assertIn(b'You are not logged in', res.data)
 
+    def test_cannot_register_duplicated_username(self):
+        self.register('alice', 'alicealice')
+
+        res = self.register('alice', 'alicealice2')
+        self.assertIn(b'has already taken', res.data)
+
 
 if __name__ == '__main__':
     unittest.main()
