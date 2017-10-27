@@ -102,6 +102,17 @@ def current_user():
     return {'current_user': c.fetchone()}
 
 
+@app.context_processor
+def follows():
+    def _follows(follower_id, following_id):
+        c = cursor()
+        c.execute('SELECT 1 FROM relations '
+                  'WHERE follower_id = %s AND following_id = %s',
+                  (follower_id, following_id))
+        return c.fetchone() is not None
+    return {'follows': _follows}
+
+
 def must_login(f):
     @wraps(f)
     def _inner(*args, **kwargs):
@@ -191,6 +202,37 @@ def userpage(username):
     return render_template('user.html', user=user)
 
 
+@app.route('/follow', methods=['POST'])
+@must_login
+def follow():
+    if request.method != 'POST':
+        abort(400)
+    username = request.form.get('username', '')
+    user_id = get_user_id_by_username(username)
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('INSERT INTO relations (follower_id, following_id) '
+                  'VALUES (%s, %s)', (session['user_id'], user_id))
+    flash('Follow successful', 'info')
+    return redirect(url_for('userpage', username=username))
+
+
+@app.route('/unfollow', methods=['POST'])
+@must_login
+def unfollow():
+    if request.method != 'POST':
+        abort(400)
+    username = request.form.get('username', '')
+    user_id = get_user_id_by_username(username)
+    c = db().cursor()
+    c.execute('DELETE FROM relations '
+              'WHERE follower_id = %s AND following_id = %s',
+              (session['user_id'], user_id))
+    db().commit()
+    flash('Unfollow successful', 'info')
+    return redirect(url_for('userpage', username=username))
+
+
 @app.route('/mypage')
 @must_login
 def mypage():
@@ -219,7 +261,8 @@ def setting():
 def initialize():
     with db() as conn:
         c = conn.cursor()
-        c.execute('TRUNCATE users')
+        c.execute('TRUNCATE relations')
+        c.execute('TRUNCATE users CASCADE')
         c.execute("SELECT SETVAL ('users_id_seq', 1, false)")
     return Response('ok', mimetype='text/plain')
 

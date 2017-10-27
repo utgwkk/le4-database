@@ -36,6 +36,16 @@ class AppTest(unittest.TestCase):
             'description': description,
         }, follow_redirects=True)
 
+    def follow(self, username):
+        return self.client.post('/follow', data={
+            'username': username
+        }, follow_redirects=True)
+
+    def unfollow(self, username):
+        return self.client.post('/unfollow', data={
+            'username': username
+        }, follow_redirects=True)
+
     def test_index(self):
         self.client.get('/')
 
@@ -68,6 +78,24 @@ class AppTest(unittest.TestCase):
 
         res = self.register('alice', 'alicealice2')
         self.assertIn(b'has already taken', res.data)
+
+    def test_follow_unfollow(self):
+        self.register('alice', 'alicealice')
+        self.logout()
+
+        self.register('bobby', 'bobbobbob')
+        self.logout()
+
+        self.login('alice', 'alicealice')
+
+        res = self.client.get('/@bobby')
+        self.assertEqual(200, res.status_code)
+
+        res = self.follow('bobby')
+        self.assertIn(b'Follow successful', res.data)
+
+        res = self.unfollow('bobby')
+        self.assertIn(b'Unfollow successful', res.data)
 
 
 if __name__ == '__main__':
