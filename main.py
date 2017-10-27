@@ -214,6 +214,18 @@ def following():
     return render_template('following.html', users=c.fetchall())
 
 
+@app.route('/follower')
+@must_login
+def follower():
+    c = cursor()
+    c.execute('SELECT u.* FROM relations r '
+              'INNER JOIN users u '
+              'ON u.id = r.follower_id AND r.following_id = %s '
+              'ORDER BY created_at DESC',
+              (session['user_id'],))
+    return render_template('follower.html', users=c.fetchall())
+
+
 @app.route('/follow', methods=['POST'])
 @must_login
 def follow():

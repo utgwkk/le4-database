@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block body %}
+<div class="list-group">
+  {% if users %}
+    {% for user in users %}
+    <div class="list-group-item">
+      <a href="{{ url_for('userpage', username=user['username']) }}"<h4 class="list-group-item-heading">@{{ user['username'] }}</h4></a>
+      <div class="list-group-item-text">{{ user['description'] or 'No description set.' }}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="alert alert-dismissible alert-warning">
+      You're not followed by anyone now.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
