@@ -271,7 +271,7 @@ def setting():
         description = request.form['description']
         with db() as conn:
             c = conn.cursor()
-            c.execute('UPDATE users SET description = %s '
+            c.execute('UPDATE users SET description = %s, updated_at = NOW() '
                       'WHERE id = %s',
                       (description, session['user_id'],))
         flash('Settings changed', 'info')
