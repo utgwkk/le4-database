@@ -6,6 +6,7 @@ import main
 class AppTest(unittest.TestCase):
     def setUp(self):
         main.app.testing = True
+        main.app.config['UPLOAD_FOLDER'] = os.environ['TEST_UPLOAD_FOLDER']
         self.client = main.app.test_client()
         self.initialize()
 
@@ -44,6 +45,13 @@ class AppTest(unittest.TestCase):
     def unfollow(self, username):
         return self.client.post('/unfollow', data={
             'username': username
+        }, follow_redirects=True)
+
+    def upload(self, file, title, description):
+        return self.client.post('/upload', data={
+            'file': file,
+            'title': title,
+            'description': description
         }, follow_redirects=True)
 
     def test_index(self):
@@ -96,6 +104,11 @@ class AppTest(unittest.TestCase):
 
         res = self.unfollow('bobby')
         self.assertIn(b'Unfollow successful', res.data)
+    
+    def test_upload(self):
+        self.register('alice', 'alicealice')
+        with open('./test/data/kids_chuunibyou_girl.png', 'rb') as f:
+            res = self.upload(f, 'hoge', 'fuga')
 
 
 if __name__ == '__main__':

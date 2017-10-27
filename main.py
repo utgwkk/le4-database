@@ -1,5 +1,6 @@
 import os
 import random
+import glob
 import psycopg2
 import psycopg2.extras
 import psycopg2.errorcodes
@@ -21,6 +22,7 @@ from flask import (
 load_dotenv(find_dotenv())
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER')
 
 
 def connect_db():
@@ -88,6 +90,14 @@ def get_username_by_user_id(user_id):
     c = cursor()
     c.execute('SELECT username FROM users WHERE id = %s', (user_id,))
     return c.fetchone()['username']
+
+
+def ext2mime(ext):
+    return {
+        '.gif': 'image/gif',
+        '.jpg': 'image/jpeg',
+        '.png': 'image/png',
+    }.get(ext)
 
 
 @app.context_processor
@@ -281,6 +291,60 @@ def setting():
         return render_template('setting.html', user=user)
 
 
+@app.route('/upload', methods=['GET', 'POST'])
+@must_login
+def upload():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file specified', 'error')
+            return redirect(url_for('upload'))
+
+        title = request.form['title']
+        description = request.form['description']
+        upload_file = request.files['file']
+        _, ext = os.path.splitext(upload_file.filename)
+        filedata = upload_file.read()
+        filename = sha256(filedata).hexdigest() + ext
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        with db() as conn:
+            c = conn.cursor()
+            c.execute('INSERT INTO posts (user_id, title, description, path) '
+                      'VALUES (%s, %s, %s, %s) RETURNING id',
+                      (session['user_id'], title, description, filename))
+            new_post_id = c.fetchone()[0]
+            with open(filepath, 'wb') as f:
+                f.write(filedata)
+        return redirect(url_for('show_post', id=new_post_id))
+    else:
+        return render_template('upload.html')
+
+
+@app.route('/post/<int:id>')
+def show_post(id):
+    c = cursor()
+    c.execute('''
+        SELECT p.id, p.title, p.description, p.path
+        FROM posts p
+        WHERE id = %s
+    ''', (id,))
+    data = c.fetchone()
+    return render_template('post.html', **data)
+
+
+@app.route('/post/<int:id>/image')
+def image(id):
+    c = cursor()
+    c.execute('''
+        SELECT path FROM posts
+        WHERE id = %s
+    ''', (id,))
+    path = c.fetchone()['path']
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], path)
+    with open(filepath, 'rb') as f:
+        data = f.read()
+        return Response(data, mimetype=ext2mime(os.path.splitext(path)[1]))
+
+
 @app.route('/initialize')
 def initialize():
     with db() as conn:
@@ -288,6 +352,10 @@ def initialize():
         c.execute('TRUNCATE relations')
         c.execute('TRUNCATE users CASCADE')
         c.execute("SELECT SETVAL ('users_id_seq', 1, false)")
+        c.execute('TRUNCATE posts CASCADE')
+        c.execute("SELECT SETVAL ('posts_id_seq', 1, false)")
+    for path in glob.glob(os.path.join(app.config['UPLOAD_FOLDER'], '*')):
+        os.remove(path)
     return Response('ok', mimetype='text/plain')
 
 
