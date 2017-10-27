@@ -73,7 +73,7 @@ def authenticate(username, password):
     c.execute('SELECT password, salt FROM users WHERE username = %s',
               (username,))
     row = c.fetchone()
-    return passhash(password, row['salt']) == row['password']
+    return row and passhash(password, row['salt']) == row['password']
 
 
 def get_user_id_by_username(username):
