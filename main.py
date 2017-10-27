@@ -133,7 +133,7 @@ def register_user():
     if request.method == 'POST':
         username = request.form.get('username', '')
         password = request.form.get('password', '')
-        description = request.args.get('description', '')
+        description = request.form.get('description', '')
         try:
             validate_user_params(username, password)
         except ValidationError as e:
