@@ -126,7 +126,12 @@ def login():
         if authenticate(username, password):
             session['user_id'] = get_user_id_by_username(username)
             flash('Login succeeded', 'info')
-            return redirect(url_for('mypage'))
+            if 'back_url' in session:
+                url = session['back_url']
+                session.pop('back_url', None)
+                return redirect(url)
+            else:
+                return redirect(url_for('mypage'))
         else:
             flash('Login failed', 'error')
             return redirect(url_for('login'))
