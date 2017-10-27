@@ -2,6 +2,7 @@ import os
 import random
 import psycopg2
 import psycopg2.extras
+from functools import wraps
 from hashlib import sha256
 from dotenv import load_dotenv, find_dotenv
 from flask import (
@@ -100,6 +101,17 @@ def current_user():
     return {'current_user': c.fetchone()}
 
 
+def must_login(f):
+    @wraps(f)
+    def _inner(*args, **kwargs):
+        if not logged_in()['logged_in']:
+            flash('You are not logged in', 'info')
+            return redirect(url_for('login'))
+        else:
+            return f(*args, **kwargs)
+    return _inner
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -167,21 +179,16 @@ def userpage(username):
 
 
 @app.route('/mypage')
+@must_login
 def mypage():
-    if not logged_in()['logged_in']:
-        flash('You are not logged in', 'info')
-        return redirect(url_for('login'))
-    else:
-        username = get_username_by_user_id(session['user_id'])
-        return redirect(url_for('userpage', username=username))
+    username = get_username_by_user_id(session['user_id'])
+    return redirect(url_for('userpage', username=username))
 
 
 @app.route('/setting', methods=['GET', 'POST'])
+@must_login
 def setting():
     if request.method == 'POST':
-        if not logged_in()['logged_in']:
-            flash('You are not logged in', 'info')
-            return redirect(url_for('login'))
         description = request.form['description']
         with db() as conn:
             c = conn.cursor()
@@ -191,9 +198,6 @@ def setting():
         flash('Settings changed', 'info')
         return redirect(url_for('setting'))
     else:
-        if not logged_in()['logged_in']:
-            flash('You are not logged in', 'info')
-            return redirect(url_for('login'))
         user = current_user()['current_user']
         return render_template('setting.html', user=user)
 
