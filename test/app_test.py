@@ -15,10 +15,11 @@ class AppTest(unittest.TestCase):
     def initialize(self):
         self.client.get('/initialize')
 
-    def register(self, username, password):
+    def register(self, username, password, description=''):
         return self.client.post('/register', data={
             'username': username,
             'password': password,
+            'description': description,
         }, follow_redirects=True)
 
     def login(self, username, password):
@@ -40,8 +41,9 @@ class AppTest(unittest.TestCase):
 
     def test_register(self):
         # Can register
-        res = self.register('alice', 'alicealice')
+        res = self.register('alice', 'alicealice', 'hey yo')
         self.assertIn(b'@alice', res.data)
+        self.assertIn(b'hey yo', res.data)
 
         # Can logout and login again
         self.logout()
