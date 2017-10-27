@@ -56,6 +56,13 @@ class AppTest(unittest.TestCase):
         res = self.change_setting('hogefuga')
         self.assertIn(b'hogefuga', res.data)
 
+    def test_not_logged_in(self):
+        res = self.client.get('/mypage', follow_redirects=True)
+        self.assertIn(b'You are not logged in', res.data)
+
+        res = self.client.get('/setting', follow_redirects=True)
+        self.assertIn(b'You are not logged in', res.data)
+
 
 if __name__ == '__main__':
     unittest.main()
