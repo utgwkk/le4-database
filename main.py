@@ -145,7 +145,22 @@ def index():
         ORDER BY p.id DESC LIMIT 8
     ''')
     posts = c.fetchall()
-    return render_template('index.html', posts=posts)
+    if logged_in()['logged_in']:
+        c.execute('''
+            SELECT p.id, p.title, p.description, u.username
+            FROM posts p
+            LEFT JOIN users u
+            ON p.user_id = u.id
+            WHERE p.user_id IN (
+                SELECT following_id FROM relations
+                WHERE follower_id = %s
+            )
+            ORDER BY p.id DESC LIMIT 8
+        ''', (session['user_id'],))
+        posts_following = c.fetchall()
+    else:
+        posts_following = []
+    return render_template('index.html', posts=posts, posts_following=posts_following)
 
 
 @app.route('/login', methods=['GET', 'POST'])

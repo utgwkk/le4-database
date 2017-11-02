@@ -14,5 +14,19 @@
       </li>
       {% endfor %}
     </ul>
+    {% if logged_in %}
+    <h2>Posts by following user</h2>
+    <ul class="list-group">
+      {% for post in posts_following %}
+      <li class="list-group-item">
+        <h4 class="list-group-item-heading"><a href="{{ url_for('show_post', id=post['id']) }}">{{ post['title'] }}</a></h4>
+        <p class="list-group-item-text">
+          <span class="thumbnail" style="background-image: url('{{ url_for('image', id=post['id']) }}')"></span>
+          {{ post['description'] }} (by <a href="{{ url_for('userpage', username=post['username']) }}">@{{ post['username'] }}</a>)
+        </p>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
   </div>
 {% endblock %}
