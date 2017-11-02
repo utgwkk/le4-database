@@ -1,8 +1,12 @@
 {% extends "layout.html" %}
 {% block body %}
-<h2>{{ title }}</h2>
-<div>
-  <img src="{{ url_for('image', id=id) }}">
+<div class="panel panel-primary">
+  <div class="panel-heading">{{ title }}</div>
+  <div class="panel-body" style="text-align: center">
+    <img src="{{ url_for('image', id=id) }}">
+  </div>
+  <div class="panel-footer">
+    {{ description }}
+  </div>
 </div>
-<p>{{ description }}</p>
 {% endblock %}
