@@ -136,7 +136,16 @@ def must_login(f):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    c = cursor()
+    c.execute('''
+        SELECT p.id, p.title, p.description, u.username
+        FROM posts p
+        LEFT JOIN users u
+        ON p.user_id = u.id
+        ORDER BY p.id DESC LIMIT 8
+    ''')
+    posts = c.fetchall()
+    return render_template('index.html', posts=posts)
 
 
 @app.route('/login', methods=['GET', 'POST'])
