@@ -123,6 +123,17 @@ def follows():
     return {'follows': _follows}
 
 
+@app.context_processor
+def favorites():
+    def _favorites(user_id, post_id):
+        c = cursor()
+        c.execute('SELECT 1 FROM favorites '
+                  'WHERE user_id = %s AND post_id = %s',
+                  (user_id, post_id))
+        return c.fetchone() is not None
+    return {'favorites': _favorites}
+
+
 def must_login(f):
     @wraps(f)
     def _inner(*args, **kwargs):
@@ -347,7 +358,7 @@ def upload():
 def show_post(id):
     c = cursor()
     c.execute('''
-        SELECT p.id, p.title, p.description, p.path
+        SELECT p.id, p.title, p.description, p.path, p.user_id
         FROM posts p
         WHERE id = %s
     ''', (id,))
@@ -369,6 +380,30 @@ def image(id):
         return Response(data, mimetype=ext2mime(os.path.splitext(path)[1]))
 
 
+@app.route('/favorite/<int:post_id>', methods=['POST'])
+@must_login
+def create_favorite(post_id):
+    c = cursor()
+    c.execute('''
+    INSERT INTO favorites (user_id, post_id)
+    VALUES (%s, %s)
+    ''', (session['user_id'], post_id,))
+    db().commit()
+    return redirect(url_for('show_post', id=post_id))
+
+
+@app.route('/unfavorite/<int:post_id>', methods=['POST'])
+@must_login
+def delete_favorite(post_id):
+    c = cursor()
+    c.execute('''
+    DELETE FROM favorites
+    WHERE user_id = %s AND post_id = %s
+    ''', (session['user_id'], post_id,))
+    db().commit()
+    return redirect(url_for('show_post', id=post_id))
+
+
 @app.route('/initialize')
 def initialize():
     with db() as conn:
@@ -378,6 +413,7 @@ def initialize():
         c.execute("SELECT SETVAL ('users_id_seq', 1, false)")
         c.execute('TRUNCATE posts CASCADE')
         c.execute("SELECT SETVAL ('posts_id_seq', 1, false)")
+        c.execute('TRUNCATE favorites CASCADE')
     for path in glob.glob(os.path.join(app.config['UPLOAD_FOLDER'], '*')):
         os.remove(path)
     return Response('ok', mimetype='text/plain')
