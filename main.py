@@ -382,6 +382,24 @@ def image(id):
         return Response(data, mimetype=ext2mime(os.path.splitext(path)[1]))
 
 
+@app.route('/favorites')
+@must_login
+def list_favorite():
+    c = cursor()
+    c.execute('''
+    SELECT p.id, p.title, p.description, u.username
+    FROM favorites f
+    INNER JOIN posts p
+    ON f.user_id = %s
+    AND f.post_id = p.id
+    INNER JOIN users u
+    ON p.user_id = u.id
+    ORDER BY f.created_at DESC
+    ''', (session['user_id'],))
+    posts = c.fetchall()
+    return render_template('favorites.html', posts=posts)
+
+
 @app.route('/favorite/<int:post_id>', methods=['POST'])
 @must_login
 def create_favorite(post_id):
