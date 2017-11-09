@@ -171,7 +171,9 @@ def index():
         posts_following = c.fetchall()
     else:
         posts_following = []
-    return render_template('index.html', posts=posts, posts_following=posts_following)
+    return render_template(
+        'index.html', posts=posts, posts_following=posts_following
+    )
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -219,15 +221,20 @@ def register_user():
             c = conn.cursor()
             try:
                 c.execute(
-                    'INSERT INTO users (username, salt, password, description) '
+                    'INSERT INTO users '
+                    '(username, salt, password, description) '
                     'VALUES (%s, %s, %s, %s) RETURNING id',
                     (username, salt, passhash(password, salt), description)
                 )
             except psycopg2.Error as e:
                 if e.pgcode == psycopg2.errorcodes.UNIQUE_VIOLATION:
-                    flash(f'The username @{username} has already taken', 'error')
+                    flash(
+                        f'The username @{username} has already taken', 'error'
+                    )
                 else:
-                    flash(f'Unknown error: {e.pgerror}', 'error')
+                    flash(
+                        f'Unknown error: {e.pgerror}', 'error'
+                    )
                 return redirect(url_for('register_user'))
         lastrowid = c.fetchone()[0]
         session['user_id'] = lastrowid
@@ -363,7 +370,10 @@ def show_post(id):
         WHERE id = %s
     ''', (id,))
     data = dict(c.fetchone())
-    c.execute('SELECT COUNT(*) AS cnt FROM favorites WHERE post_id = %s', (id,))
+    c.execute(
+        'SELECT COUNT(*) AS cnt FROM favorites WHERE post_id = %s',
+        (id,)
+    )
     data['favorites_count'] = c.fetchone()['cnt']
     return render_template('post.html', **data)
 
