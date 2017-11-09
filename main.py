@@ -66,7 +66,7 @@ class ValidationError(Exception):
 def validate_user_params(username, password):
     if len(username) < 4:
         raise ValidationError('username should be at least 4 characters')
-    if len(username) > 64:
+    if len(username) >= 32:
         raise ValidationError('username should be shorter than 32 characters')
     if len(password) < 6:
         raise ValidationError('password should be at least 6 characters')
