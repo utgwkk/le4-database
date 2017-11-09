@@ -362,7 +362,9 @@ def show_post(id):
         FROM posts p
         WHERE id = %s
     ''', (id,))
-    data = c.fetchone()
+    data = dict(c.fetchone())
+    c.execute('SELECT COUNT(*) AS cnt FROM favorites WHERE post_id = %s', (id,))
+    data['favorites_count'] = c.fetchone()['cnt']
     return render_template('post.html', **data)
 
 

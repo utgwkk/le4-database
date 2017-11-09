@@ -6,7 +6,10 @@
     <img src="{{ url_for('image', id=id) }}">
   </div>
   <div class="panel-footer">
-    {{ description }}
+    <p>{{ description }}</p>
+    {% if favorites_count > 0 %}
+      <p>Favorited by {{ favorites_count }} users </p>
+    {% endif %}
   </div>
 </div>
 {% if logged_in %}
