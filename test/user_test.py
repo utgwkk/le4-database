@@ -13,6 +13,11 @@ class UserTest(AppTestCase):
         res = self.login('alice', 'alicealice')
         self.assertIn(b'@alice', res.data)
 
+    def test_logout(self):
+        self.register('alice', 'alicealice', 'hey yo')
+        res = self.logout()
+        self.assertNotIn(b'@alice', res.data)
+
     def test_username_should_be_longer_than_3_chars(self):
         # Too short username
         res = self.register('bob', 'bobbobbob')
