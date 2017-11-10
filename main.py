@@ -384,6 +384,22 @@ def show_post(id):
     return render_template('post.html', **data)
 
 
+@app.route('/post/<int:id>/delete', methods=['POST'])
+@must_login
+def delete_post(id):
+    with db() as conn:
+        c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c.execute('SELECT user_id FROM posts WHERE id = %s', (id,))
+        post_user_id = c.fetchone()['user_id']
+        if session['user_id'] != post_user_id:
+            abort(403)
+
+        c.execute('DELETE FROM posts WHERE id = %s', (id,))
+
+    flash('Delete successful', 'info')
+    return redirect(url_for('index'))
+
+
 @app.route('/post/<int:id>/image')
 def image(id):
     c = cursor()
