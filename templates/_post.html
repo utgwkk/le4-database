@@ -2,6 +2,9 @@
   <h4 class="list-group-item-heading"><a href="{{ url_for('show_post', id=post['id']) }}">{{ post['title'] }}</a></h4>
   <p class="list-group-item-text">
     <span class="thumbnail" style="background-image: url('{{ url_for('image', id=post['id']) }}')"></span>
-    {{ post['description'] }} (by <a href="{{ url_for('userpage', username=post['username']) }}">@{{ post['username'] }}</a>)
+    {{ post['description'] }}
+    {% if 'username' in post %}
+      (by <a href="{{ url_for('userpage', username=post['username']) }}">@{{ post['username'] }}</a>)
+    {% endif %}
   </p>
 </li>

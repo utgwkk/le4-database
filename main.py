@@ -257,7 +257,15 @@ def userpage(username):
     user = c.fetchone()
     if user is None:
         abort(404)
-    return render_template('user.html', user=user)
+
+    # Fetch user's post
+    c.execute('''
+        SELECT id, title, description FROM posts
+        WHERE user_id = %s
+        ORDER BY created_at DESC
+    ''', (user['id'],))
+    posts = c.fetchall()
+    return render_template('user.html', user=user, posts=posts)
 
 
 @app.route('/following')

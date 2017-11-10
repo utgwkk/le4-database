@@ -174,6 +174,16 @@ class AppTest(unittest.TestCase):
         res = self.delete_post(1)
         self.assertEqual(403, res.status_code)
 
+    def test_can_see_uploaded_post_on_user_page(self):
+        self.register('alice', 'alicealice')
+        with open('./test/data/kids_chuunibyou_girl.png', 'rb') as f:
+            self.upload(f, 'hoge', 'fuga')
+        self.logout()
+
+        res = self.client.get('/@alice', follow_redirects=True)
+        self.assertIn(b'hoge', res.data)
+        self.assertIn(b'fuga', res.data)
+
 
 if __name__ == '__main__':
     unittest.main()
