@@ -64,6 +64,11 @@ class AppTest(unittest.TestCase):
             f'/unfavorite/{post_id}', follow_redirects=True
         )
 
+    def delete_post(self, post_id):
+        return self.client.post(
+            f'/post/{post_id}/delete', follow_redirects=True
+        )
+
     def test_index(self):
         self.client.get('/')
 
@@ -151,6 +156,23 @@ class AppTest(unittest.TestCase):
         for i in range(10):
             self.assertIn(b'hoge%d' % i, res.data)
             self.assertIn(b'fuga%d' % i, res.data)
+
+    def test_delete_post(self):
+        self.register('alice', 'alicealice')
+        with open('./test/data/kids_chuunibyou_girl.png', 'rb') as f:
+            self.upload(f, 'hoge', 'fuga')
+
+        res = self.delete_post(1)
+        self.assertIn(b'Delete successful', res.data)
+
+    def test_delete_post_only_allowed_to_uploaded_user(self):
+        self.register('alice', 'alicealice')
+        with open('./test/data/kids_chuunibyou_girl.png', 'rb') as f:
+            self.upload(f, 'hoge', 'fuga')
+
+        self.register('bobby', 'bobbobbob')
+        res = self.delete_post(1)
+        self.assertEqual(403, res.status_code)
 
 
 if __name__ == '__main__':
