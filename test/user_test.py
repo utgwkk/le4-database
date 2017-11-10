@@ -13,6 +13,25 @@ class UserTest(AppTestCase):
         res = self.login('alice', 'alicealice')
         self.assertIn(b'@alice', res.data)
 
+    def test_username_should_be_longer_than_3_chars(self):
+        # Too short username
+        res = self.register('bob', 'bobbobbob')
+        self.assertNotIn(b'@bob', res.data)
+
+    def test_username_should_be_shorter_than_32_chars(self):
+        # Too long username
+        res = self.register('thisusernamehasmorethan32characters', 'hogefuga')
+        self.assertNotIn(b'@thisusernamehasmorethan32characters', res.data)
+
+    def test_password_should_be_longer_than_5_chars(self):
+        # Too short password
+        res = self.register('bobby', 'short')
+        self.assertNotIn(b'@bobby', res.data)
+
+    def test_user_not_found_should_be_404(self):
+        res = self.client.get('/@notfound')
+        self.assertEqual(404, res.status_code)
+
     def test_change_setting(self):
         self.register('alice', 'alicealice')
 
@@ -31,6 +50,12 @@ class UserTest(AppTestCase):
 
         res = self.register('alice', 'alicealice2')
         self.assertIn(b'has already taken', res.data)
+
+    def test_cannot_login_with_wrong_password(self):
+        self.register('alice', 'alicealice')
+
+        res = self.login('alice', 'alicealice2')
+        self.assertIn(b'Login failed', res.data)
 
     def test_follow_unfollow(self):
         self.register('alice', 'alicealice')
