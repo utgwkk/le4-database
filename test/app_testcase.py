@@ -30,7 +30,7 @@ class AppTestCase(unittest.TestCase):
         }, follow_redirects=True)
 
     def logout(self):
-        self.client.post('/logout')
+        return self.client.get('/logout', follow_redirects=True)
 
     def change_setting(self, description):
         return self.client.post('/setting', data={
