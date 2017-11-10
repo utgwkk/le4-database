@@ -483,6 +483,7 @@ def initialize():
     with db() as conn:
         c = conn.cursor()
         c.execute('TRUNCATE relations')
+        c.execute('TRUNCATE comments')
         c.execute('TRUNCATE users CASCADE')
         c.execute("SELECT SETVAL ('users_id_seq', 1, false)")
         c.execute('TRUNCATE posts CASCADE')
