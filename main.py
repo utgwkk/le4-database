@@ -269,24 +269,44 @@ def userpage(username):
 @app.route('/following')
 @must_login
 def following():
+    username = get_username_by_user_id(session['user_id'])
+    return redirect(url_for('users_following', username=username))
+
+
+@app.route('/@<string:username>/following')
+def users_following(username):
     c = db().cursor()
-    c.execute('SELECT u.* FROM relations r '
-              'INNER JOIN users u '
-              'ON u.id = r.following_id AND r.follower_id = %s '
-              'ORDER BY created_at DESC',
-              (session['user_id'],))
+    c.execute('''
+    SELECT u.* FROM relations r
+    INNER JOIN users u
+    ON u.id = r.following_id AND r.follower_id = (
+        SELECT id FROM users
+        WHERE username = %s
+    )
+    ORDER BY created_at DESC
+    ''', (username,))
     return render_template('following.html', users=c.fetchall())
 
 
 @app.route('/follower')
 @must_login
 def follower():
+    username = get_username_by_user_id(session['user_id'])
+    return redirect(url_for('users_follower', username=username))
+
+
+@app.route('/@<string:username>/follower')
+def users_follower(username):
     c = db().cursor()
-    c.execute('SELECT u.* FROM relations r '
-              'INNER JOIN users u '
-              'ON u.id = r.follower_id AND r.following_id = %s '
-              'ORDER BY created_at DESC',
-              (session['user_id'],))
+    c.execute('''
+    SELECT u.* FROM relations r
+    INNER JOIN users u
+    ON u.id = r.follower_id AND r.following_id = (
+        SELECT id FROM users
+        WHERE username = %s
+    )
+    ORDER BY created_at DESC
+    ''', (username,))
     return render_template('follower.html', users=c.fetchall())
 
 
