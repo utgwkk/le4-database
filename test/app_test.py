@@ -184,6 +184,18 @@ class AppTest(unittest.TestCase):
         self.assertIn(b'hoge', res.data)
         self.assertIn(b'fuga', res.data)
 
+    def test_post_comment(self):
+        self.register('alice', 'alicealice')
+        with open('./test/data/kids_chuunibyou_girl.png', 'rb') as f:
+            self.upload(f, 'hoge', 'fuga')
+        self.logout()
+
+        self.register('bobby', 'bobbobbob')
+        res = self.client.post('/post/1/comment', data={
+            'content': 'POYO'
+        }, follow_redirects=True)
+        self.assertIn(b'POYO', res.data)
+
 
 if __name__ == '__main__':
     unittest.main()

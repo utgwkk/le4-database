@@ -10,6 +10,24 @@
     {% if favorites_count > 0 %}
       <p>Favorited by {{ favorites_count }} users </p>
     {% endif %}
+  {% if logged_in %}
+    <form class="form-horizontal" action="{{ url_for('post_comment', post_id=id) }}" method="POST">
+      <div class="form-group">
+        <label for="content" class="col-lg-2 control-label">Content <strong>(required)</strong></label>
+        <textarea name="content" rows="4" cols="80"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Comment</button>
+    </form>
+  {% endif %}
+  <ul class="list-group">
+    {% for comment in comments %}
+    <li class="list-group-item">
+      <h4 class="list-group-item-heading"><a href="{{ url_for('userpage', username=comment['username']) }}">@{{ comment['username'] }}</a></h4>
+      <p>{{ comment['content'] }}</p>
+      <p>{{ comment['created_at'] }}</p>
+    </li>
+    {% endfor %}
+  </ul>
   </div>
 </div>
 {% if logged_in %}
