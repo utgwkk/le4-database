@@ -314,11 +314,11 @@ def unfollow():
         abort(400)
     username = request.form.get('username', '')
     user_id = get_user_id_by_username(username)
-    c = db().cursor()
-    c.execute('DELETE FROM relations '
-              'WHERE follower_id = %s AND following_id = %s',
-              (session['user_id'], user_id))
-    db().commit()
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('DELETE FROM relations '
+                  'WHERE follower_id = %s AND following_id = %s',
+                  (session['user_id'], user_id))
     flash('Unfollow successful', 'info')
     return redirect(url_for('userpage', username=username))
 
@@ -480,24 +480,24 @@ def list_favorite():
 @app.route('/favorite/<int:post_id>', methods=['POST'])
 @must_login
 def create_favorite(post_id):
-    c = cursor()
-    c.execute('''
-    INSERT INTO favorites (user_id, post_id)
-    VALUES (%s, %s)
-    ''', (session['user_id'], post_id,))
-    db().commit()
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+        INSERT INTO favorites (user_id, post_id)
+        VALUES (%s, %s)
+        ''', (session['user_id'], post_id,))
     return redirect(url_for('show_post', id=post_id))
 
 
 @app.route('/unfavorite/<int:post_id>', methods=['POST'])
 @must_login
 def delete_favorite(post_id):
-    c = cursor()
-    c.execute('''
-    DELETE FROM favorites
-    WHERE user_id = %s AND post_id = %s
-    ''', (session['user_id'], post_id,))
-    db().commit()
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+        DELETE FROM favorites
+        WHERE user_id = %s AND post_id = %s
+        ''', (session['user_id'], post_id,))
     return redirect(url_for('show_post', id=post_id))
 
 
