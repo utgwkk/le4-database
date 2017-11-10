@@ -403,6 +403,15 @@ def show_post(id):
         (id,)
     )
     data['favorites_count'] = c.fetchone()['cnt']
+    c.execute('''
+        SELECT c.content, c.created_at, u.username
+        FROM comments c
+        INNER JOIN users u
+        ON c.user_id = u.id
+        WHERE c.post_id = %s
+        ORDER BY c.created_at DESC
+    ''', (id,))
+    data['comments'] = c.fetchall()
     return render_template('post.html', **data)
 
 
@@ -434,6 +443,20 @@ def image(id):
     with open(filepath, 'rb') as f:
         data = f.read()
         return Response(data, mimetype=ext2mime(os.path.splitext(path)[1]))
+
+
+@app.route('/post/<int:post_id>/comment', methods=['POST'])
+@must_login
+def post_comment(post_id):
+    content = request.form['content']
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+        INSERT INTO comments
+        (post_id, user_id, content) VALUES
+        (%s, %s, %s)
+        ''', (post_id, session['user_id'], content))
+    return redirect(url_for('show_post', id=post_id))
 
 
 @app.route('/favorites')
