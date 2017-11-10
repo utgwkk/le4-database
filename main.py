@@ -100,44 +100,50 @@ def ext2mime(ext):
     }.get(ext)
 
 
-@app.context_processor
+def helper(f):
+    @app.context_processor
+    def processor():
+        if f.__code__.co_nlocals > 1:
+            return {f.__name__: f}
+        else:
+            return {f.__name__: f()}
+    return f
+
+
+@helper
 def logged_in():
-    return {'logged_in': 'user_id' in session}
+    return 'user_id' in session
 
 
-@app.context_processor
+@helper
 def current_user():
     c = cursor()
     c.execute('SELECT * FROM users WHERE id = %s', (session.get('user_id'),))
-    return {'current_user': c.fetchone()}
+    return c.fetchone()
 
 
-@app.context_processor
-def follows():
-    def _follows(follower_id, following_id):
-        c = cursor()
-        c.execute('SELECT 1 FROM relations '
-                  'WHERE follower_id = %s AND following_id = %s',
-                  (follower_id, following_id))
-        return c.fetchone() is not None
-    return {'follows': _follows}
+@helper
+def follows(follower_id, following_id):
+    c = cursor()
+    c.execute('SELECT 1 FROM relations '
+              'WHERE follower_id = %s AND following_id = %s',
+              (follower_id, following_id))
+    return c.fetchone() is not None
 
 
-@app.context_processor
-def favorites():
-    def _favorites(user_id, post_id):
-        c = cursor()
-        c.execute('SELECT 1 FROM favorites '
-                  'WHERE user_id = %s AND post_id = %s',
-                  (user_id, post_id))
-        return c.fetchone() is not None
-    return {'favorites': _favorites}
+@helper
+def favorites(user_id, post_id):
+    c = cursor()
+    c.execute('SELECT 1 FROM favorites '
+              'WHERE user_id = %s AND post_id = %s',
+              (user_id, post_id))
+    return c.fetchone() is not None
 
 
 def must_login(f):
     @wraps(f)
     def _inner(*args, **kwargs):
-        if not logged_in()['logged_in']:
+        if not logged_in():
             flash('You are not logged in', 'info')
             return redirect(url_for('login'))
         else:
@@ -156,7 +162,7 @@ def index():
         ORDER BY p.id DESC LIMIT 8
     ''')
     posts = c.fetchall()
-    if logged_in()['logged_in']:
+    if logged_in():
         c.execute('''
             SELECT p.id, p.title, p.description, u.username
             FROM posts p
@@ -329,7 +335,7 @@ def setting():
         flash('Settings changed', 'info')
         return redirect(url_for('setting'))
     else:
-        user = current_user()['current_user']
+        user = current_user()
         return render_template('setting.html', user=user)
 
 
