@@ -313,8 +313,6 @@ def users_follower(username):
 @app.route('/follow', methods=['POST'])
 @must_login
 def follow():
-    if request.method != 'POST':
-        abort(400)
     username = request.form.get('username', '')
     user_id = get_user_id_by_username(username)
     with db() as conn:
@@ -328,8 +326,6 @@ def follow():
 @app.route('/unfollow', methods=['POST'])
 @must_login
 def unfollow():
-    if request.method != 'POST':
-        abort(400)
     username = request.form.get('username', '')
     user_id = get_user_id_by_username(username)
     with db() as conn:

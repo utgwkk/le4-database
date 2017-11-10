@@ -1,0 +1,8 @@
+[run]
+branch = True
+source = ./
+cover_pylib = False
+
+[report]
+exclude_lines =
+    if __name__ == .__main__.:
