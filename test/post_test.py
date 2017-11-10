@@ -6,6 +6,13 @@ class PostTest(AppTestCase):
         self.register('alice', 'alicealice')
         with open('./test/data/kids_chuunibyou_girl.png', 'rb') as f:
             res = self.upload(f, 'hoge', 'fuga')
+        self.assertIn(b'hoge', res.data)
+        self.assertIn(b'fuga', res.data)
+
+        # Check uploaded image
+        res = self.client.get('/post/1/image')
+        self.assertEqual(200, res.status_code)
+        self.assertGreater(len(res.data), 0)
 
     def test_post_owner_can_delete_post(self):
         self.register('alice', 'alicealice')
