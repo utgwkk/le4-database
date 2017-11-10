@@ -27,7 +27,7 @@ app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER')
 
 def connect_db():
     if hasattr(app, 'testing') and app.testing:
-        return psycopg2.connect(
+        conn = psycopg2.connect(
             host=os.environ.get('POSTGRESQL_HOST', 'localhost'),
             port=os.environ.get('POSTGRESQL_PORT', 5432),
             user=os.environ.get('POSTGRESQL_USER'),
@@ -35,23 +35,21 @@ def connect_db():
             dbname=os.environ.get('TEST_POSTGRESQL_DB'),
         )
     else:
-        return psycopg2.connect(
+        conn = psycopg2.connect(
             host=os.environ.get('POSTGRESQL_HOST', 'localhost'),
             port=os.environ.get('POSTGRESQL_PORT', 5432),
             user=os.environ.get('POSTGRESQL_USER'),
             password=os.environ.get('POSTGRESQL_PASS'),
             dbname=os.environ.get('POSTGRESQL_DB'),
         )
+    conn.cursor_factory = psycopg2.extras.DictCursor
+    return conn
 
 
 def db():
     if not hasattr(g, 'db'):
         g.db = connect_db()
     return g.db
-
-
-def cursor():
-    return db().cursor(cursor_factory=psycopg2.extras.DictCursor)
 
 
 def passhash(password, salt):
@@ -73,7 +71,7 @@ def validate_user_params(username, password):
 
 
 def authenticate(username, password):
-    c = cursor()
+    c = db().cursor()
     c.execute('SELECT password, salt FROM users WHERE username = %s',
               (username,))
     row = c.fetchone()
@@ -81,13 +79,13 @@ def authenticate(username, password):
 
 
 def get_user_id_by_username(username):
-    c = cursor()
+    c = db().cursor()
     c.execute('SELECT id FROM users WHERE username = %s', (username,))
     return c.fetchone()['id']
 
 
 def get_username_by_user_id(user_id):
-    c = cursor()
+    c = db().cursor()
     c.execute('SELECT username FROM users WHERE id = %s', (user_id,))
     return c.fetchone()['username']
 
@@ -117,14 +115,14 @@ def logged_in():
 
 @helper
 def current_user():
-    c = cursor()
+    c = db().cursor()
     c.execute('SELECT * FROM users WHERE id = %s', (session.get('user_id'),))
     return c.fetchone()
 
 
 @helper
 def follows(follower_id, following_id):
-    c = cursor()
+    c = db().cursor()
     c.execute('SELECT 1 FROM relations '
               'WHERE follower_id = %s AND following_id = %s',
               (follower_id, following_id))
@@ -133,7 +131,7 @@ def follows(follower_id, following_id):
 
 @helper
 def favorites(user_id, post_id):
-    c = cursor()
+    c = db().cursor()
     c.execute('SELECT 1 FROM favorites '
               'WHERE user_id = %s AND post_id = %s',
               (user_id, post_id))
@@ -153,7 +151,7 @@ def must_login(f):
 
 @app.route('/')
 def index():
-    c = cursor()
+    c = db().cursor()
     c.execute('''
         SELECT p.id, p.title, p.description, u.username
         FROM posts p
@@ -252,7 +250,7 @@ def register_user():
 
 @app.route('/@<string:username>')
 def userpage(username):
-    c = cursor()
+    c = db().cursor()
     c.execute('SELECT * FROM users WHERE username = %s', (username,))
     user = c.fetchone()
     if user is None:
@@ -271,7 +269,7 @@ def userpage(username):
 @app.route('/following')
 @must_login
 def following():
-    c = cursor()
+    c = db().cursor()
     c.execute('SELECT u.* FROM relations r '
               'INNER JOIN users u '
               'ON u.id = r.following_id AND r.follower_id = %s '
@@ -283,7 +281,7 @@ def following():
 @app.route('/follower')
 @must_login
 def follower():
-    c = cursor()
+    c = db().cursor()
     c.execute('SELECT u.* FROM relations r '
               'INNER JOIN users u '
               'ON u.id = r.follower_id AND r.following_id = %s '
@@ -314,11 +312,11 @@ def unfollow():
         abort(400)
     username = request.form.get('username', '')
     user_id = get_user_id_by_username(username)
-    c = db().cursor()
-    c.execute('DELETE FROM relations '
-              'WHERE follower_id = %s AND following_id = %s',
-              (session['user_id'], user_id))
-    db().commit()
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('DELETE FROM relations '
+                  'WHERE follower_id = %s AND following_id = %s',
+                  (session['user_id'], user_id))
     flash('Unfollow successful', 'info')
     return redirect(url_for('userpage', username=username))
 
@@ -377,7 +375,7 @@ def upload():
 
 @app.route('/posts')
 def list_posts():
-    c = cursor()
+    c = db().cursor()
     c.execute('''
         SELECT p.id, p.title, p.description, u.username
         FROM posts p
@@ -391,7 +389,7 @@ def list_posts():
 
 @app.route('/post/<int:id>')
 def show_post(id):
-    c = cursor()
+    c = db().cursor()
     c.execute('''
         SELECT p.id, p.title, p.description, p.path, p.user_id
         FROM posts p
@@ -433,7 +431,7 @@ def delete_post(id):
 
 @app.route('/post/<int:id>/image')
 def image(id):
-    c = cursor()
+    c = db().cursor()
     c.execute('''
         SELECT path FROM posts
         WHERE id = %s
@@ -462,7 +460,7 @@ def post_comment(post_id):
 @app.route('/favorites')
 @must_login
 def list_favorite():
-    c = cursor()
+    c = db().cursor()
     c.execute('''
     SELECT p.id, p.title, p.description, u.username
     FROM favorites f
@@ -480,24 +478,24 @@ def list_favorite():
 @app.route('/favorite/<int:post_id>', methods=['POST'])
 @must_login
 def create_favorite(post_id):
-    c = cursor()
-    c.execute('''
-    INSERT INTO favorites (user_id, post_id)
-    VALUES (%s, %s)
-    ''', (session['user_id'], post_id,))
-    db().commit()
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+        INSERT INTO favorites (user_id, post_id)
+        VALUES (%s, %s)
+        ''', (session['user_id'], post_id,))
     return redirect(url_for('show_post', id=post_id))
 
 
 @app.route('/unfavorite/<int:post_id>', methods=['POST'])
 @must_login
 def delete_favorite(post_id):
-    c = cursor()
-    c.execute('''
-    DELETE FROM favorites
-    WHERE user_id = %s AND post_id = %s
-    ''', (session['user_id'], post_id,))
-    db().commit()
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+        DELETE FROM favorites
+        WHERE user_id = %s AND post_id = %s
+        ''', (session['user_id'], post_id,))
     return redirect(url_for('show_post', id=post_id))
 
 
