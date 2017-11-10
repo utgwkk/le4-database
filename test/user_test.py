@@ -49,3 +49,32 @@ class UserTest(AppTestCase):
 
         res = self.unfollow('bobby')
         self.assertIn(b'Unfollow successful', res.data)
+
+    def test_following_list(self):
+        self.register('alice', 'alicealice')
+        self.logout()
+
+        self.register('bobby', 'bobbobbob')
+        self.logout()
+
+        self.login('alice', 'alicealice')
+        self.follow('bobby')
+
+        res = self.client.get('/following', follow_redirects=True)
+        self.assertIn(b'bobby', res.data)
+
+    def test_follower_list(self):
+        self.register('alice', 'alicealice')
+        self.logout()
+
+        self.register('bobby', 'bobbobbob')
+        self.logout()
+
+        self.login('alice', 'alicealice')
+        self.follow('bobby')
+        self.logout()
+
+        self.login('bobby', 'bobbobbob')
+
+        res = self.client.get('/follower', follow_redirects=True)
+        self.assertIn(b'alice', res.data)
