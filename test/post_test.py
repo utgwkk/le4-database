@@ -12,6 +12,7 @@ class PostTest(AppTestCase):
         # Check uploaded image
         res = self.client.get('/post/1/image')
         self.assertEqual(200, res.status_code)
+        self.assertGreater(len(res.data), 0)
 
     def test_post_owner_can_delete_post(self):
         self.register('alice', 'alicealice')
