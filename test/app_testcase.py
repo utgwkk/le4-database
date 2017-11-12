@@ -10,9 +10,6 @@ class AppTestCase(unittest.TestCase):
         self.client = main.app.test_client()
         self.initialize()
 
-    def tearDown(self):
-        self.initialize()
-
     def initialize(self):
         self.client.get('/initialize')
 
