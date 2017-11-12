@@ -520,9 +520,8 @@ def delete_favorite(post_id):
     return redirect(url_for('show_post', id=post_id))
 
 
-@app.route('/initialize')
 def initialize():
-    with db() as conn:
+    with connect_db() as conn:
         c = conn.cursor()
         c.execute('TRUNCATE relations')
         c.execute('TRUNCATE comments')
@@ -533,7 +532,6 @@ def initialize():
         c.execute('TRUNCATE favorites CASCADE')
     for path in glob.glob(os.path.join(app.config['UPLOAD_FOLDER'], '*')):
         os.remove(path)
-    return Response('ok', mimetype='text/plain')
 
 
 if __name__ == '__main__':

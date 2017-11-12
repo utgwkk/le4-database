@@ -11,7 +11,7 @@ class AppTestCase(unittest.TestCase):
         self.initialize()
 
     def initialize(self):
-        self.client.get('/initialize')
+        main.initialize()
 
     def register(self, username, password, description=''):
         return self.client.post('/register', data={
