@@ -10,11 +10,8 @@ class AppTestCase(unittest.TestCase):
         self.client = main.app.test_client()
         self.initialize()
 
-    def tearDown(self):
-        self.initialize()
-
     def initialize(self):
-        self.client.get('/initialize')
+        main.initialize()
 
     def register(self, username, password, description=''):
         return self.client.post('/register', data={
@@ -30,7 +27,7 @@ class AppTestCase(unittest.TestCase):
         }, follow_redirects=True)
 
     def logout(self):
-        self.client.post('/logout')
+        return self.client.get('/logout', follow_redirects=True)
 
     def change_setting(self, description):
         return self.client.post('/setting', data={

@@ -14,6 +14,35 @@ class PostTest(AppTestCase):
         self.assertEqual(200, res.status_code)
         self.assertGreater(len(res.data), 0)
 
+    def test_upload_without_file_will_fail(self):
+        self.register('alice', 'alicealice')
+        res = self.upload(None, 'hoge', 'fuga')
+        self.assertIn(b'No file specified', res.data)
+
+    def test_visit_upload_page(self):
+        self.register('alice', 'alicealice')
+
+        res = self.client.get('/upload', follow_redirects=True)
+        self.assertNotIn(b'You are not logged in', res.data)
+
+    def test_only_logged_in_user_can_visit_upload_page(self):
+        res = self.client.get('/upload', follow_redirects=True)
+        self.assertIn(b'You are not logged in', res.data)
+
+    def test_post_list(self):
+        self.register('alice', 'alicealice')
+        with open('./test/data/kids_chuunibyou_girl.png', 'rb') as f:
+            res = self.upload(f, 'hoge', 'fuga')
+
+        # Check uploaded image is listed on /posts
+        res = self.client.get('/posts')
+        self.assertIn(b'hoge', res.data)
+        self.assertIn(b'fuga', res.data)
+
+    def test_only_logged_in_user_can_see_upload_page(self):
+        res = self.client.get('/upload', follow_redirects=True)
+        self.assertIn(b'You are not logged in', res.data)
+
     def test_post_owner_can_delete_post(self):
         self.register('alice', 'alicealice')
         with open('./test/data/kids_chuunibyou_girl.png', 'rb') as f:
