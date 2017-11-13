@@ -250,19 +250,24 @@ def register_user():
 
 @app.route('/@<string:username>')
 def userpage(username):
-    c = db().cursor()
-    c.execute('SELECT * FROM users WHERE username = %s', (username,))
-    user = c.fetchone()
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('SELECT * FROM users WHERE username = %s', (username,))
+        user = c.fetchone()
+
     if user is None:
         abort(404)
 
     # Fetch user's post
-    c.execute('''
-        SELECT id, title, description FROM posts
-        WHERE user_id = %s
-        ORDER BY created_at DESC
-    ''', (user['id'],))
-    posts = c.fetchall()
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+            SELECT id, title, description FROM posts
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+        ''', (user['id'],))
+        posts = c.fetchall()
+
     return render_template('user.html', user=user, posts=posts)
 
 
