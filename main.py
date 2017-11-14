@@ -452,7 +452,7 @@ def show_post(id):
 @must_login
 def delete_post(id):
     with db() as conn:
-        c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c = conn.cursor()
         c.execute('SELECT user_id FROM posts WHERE id = %s', (id,))
         post_user_id = c.fetchone()['user_id']
         if session['user_id'] != post_user_id:
