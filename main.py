@@ -104,10 +104,7 @@ def ext2mime(ext):
 def helper(f):
     @app.context_processor
     def processor():
-        if f.__code__.co_nlocals > 1:
-            return {f.__name__: f}
-        else:
-            return {f.__name__: f()}
+        return {f.__name__: f}
     return f
 
 

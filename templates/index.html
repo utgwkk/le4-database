@@ -11,7 +11,7 @@
         {% include "_post.html" %}
       {% endfor %}
     </ul>
-    {% if logged_in %}
+    {% if logged_in() %}
     <h2>Posts by following user</h2>
     <ul class="list-group">
       {% for post in posts_following %}
