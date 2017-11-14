@@ -1,6 +1,7 @@
 import os
 import random
 import glob
+import time
 import psycopg2
 import psycopg2.extras
 import psycopg2.errorcodes
@@ -487,7 +488,11 @@ def image(id):
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], path)
     with open(filepath, 'rb') as f:
         data = f.read()
-        return Response(data, mimetype=ext2mime(os.path.splitext(path)[1]))
+    last_modified = time.strftime('%a, %d %b %Y %H:%M:%S GMT',
+                                  time.gmtime(os.stat(filepath).st_mtime))
+    resp = Response(data, mimetype=ext2mime(os.path.splitext(path)[1]))
+    resp.headers['Last-Modified'] = last_modified
+    return resp
 
 
 @app.route('/post/<int:post_id>/comment', methods=['POST'])
