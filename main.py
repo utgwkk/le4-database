@@ -195,16 +195,14 @@ def login():
         if authenticate(username, password):
             session['user_id'] = get_user_id_by_username(username)
             flash('Login succeeded', 'info')
-            if 'back_url' in session:
-                url = session['back_url']
-                session.pop('back_url', None)
-                return redirect(url)
-            else:
-                return redirect(url_for('mypage'))
+            url = session.pop('back_url', url_for('mypage'))
+            return redirect(url)
         else:
             flash('Login failed', 'error')
             return redirect(url_for('login'))
     else:
+        if request.referrer:
+            session['back_url'] = request.referrer
         return render_template('login.html')
 
 
