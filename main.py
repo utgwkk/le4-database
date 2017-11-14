@@ -328,11 +328,18 @@ def users_follower(username):
 @must_login
 def follow():
     username = request.form.get('username', '')
-    user_id = get_user_id_by_username(username)
     with db() as conn:
         c = conn.cursor()
-        c.execute('INSERT INTO relations (follower_id, following_id) '
-                  'VALUES (%s, %s)', (session['user_id'], user_id))
+        try:
+            c.execute('''
+            INSERT INTO relations (follower_id, following_id)
+            VALUES (%s, (SELECT id FROM users WHERE username = %s))
+            ''', (session['user_id'], username))
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+                abort(400)
+            else:
+                raise e
     flash('Follow successful', 'info')
     return redirect(url_for('userpage', username=username))
 
@@ -341,12 +348,13 @@ def follow():
 @must_login
 def unfollow():
     username = request.form.get('username', '')
-    user_id = get_user_id_by_username(username)
     with db() as conn:
         c = conn.cursor()
-        c.execute('DELETE FROM relations '
-                  'WHERE follower_id = %s AND following_id = %s',
-                  (session['user_id'], user_id))
+        c.execute('''
+        DELETE FROM relations
+        WHERE follower_id = %s AND
+        following_id = (SELECT id FROM users WHERE username = %s)
+        ''', (session['user_id'], username))
     flash('Unfollow successful', 'info')
     return redirect(url_for('userpage', username=username))
 
@@ -427,7 +435,11 @@ def show_post(id):
             FROM posts p
             WHERE id = %s
         ''', (id,))
-        data = dict(c.fetchone())
+        row = c.fetchone()
+        if row is None:
+            abort(404)
+
+        data = dict(row)
         c.execute(
             'SELECT COUNT(*) AS cnt FROM favorites WHERE post_id = %s',
             (id,)
@@ -469,7 +481,11 @@ def image(id):
             SELECT path FROM posts
             WHERE id = %s
         ''', (id,))
-    path = c.fetchone()['path']
+    row = c.fetchone()
+    if row is None:
+        abort(404)
+
+    path = row['path']
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], path)
     with open(filepath, 'rb') as f:
         data = f.read()
@@ -482,11 +498,17 @@ def post_comment(post_id):
     content = request.form['content']
     with db() as conn:
         c = conn.cursor()
-        c.execute('''
-        INSERT INTO comments
-        (post_id, user_id, content) VALUES
-        (%s, %s, %s)
-        ''', (post_id, session['user_id'], content))
+        try:
+            c.execute('''
+            INSERT INTO comments
+            (post_id, user_id, content) VALUES
+            (%s, %s, %s)
+            ''', (post_id, session['user_id'], content))
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
+                abort(400)
+            else:
+                raise e
     return redirect(url_for('show_post', id=post_id))
 
 
@@ -514,10 +536,16 @@ def list_favorite():
 def create_favorite(post_id):
     with db() as conn:
         c = conn.cursor()
-        c.execute('''
-        INSERT INTO favorites (user_id, post_id)
-        VALUES (%s, %s)
-        ''', (session['user_id'], post_id,))
+        try:
+            c.execute('''
+            INSERT INTO favorites (user_id, post_id)
+            VALUES (%s, %s)
+            ''', (session['user_id'], post_id,))
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
+                abort(400)
+            else:
+                raise e
     return redirect(url_for('show_post', id=post_id))
 
 

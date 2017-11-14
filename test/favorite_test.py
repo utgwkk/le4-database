@@ -18,6 +18,11 @@ class FavoriteTest(AppTestCase):
         res = self.unfavorite(1)
         self.assertIn(b'Favorite', res.data)
 
+    def test_cannot_favorite_not_exist_post(self):
+        self.register('alice', 'alicealice')
+        res = self.favorite(1)
+        self.assertEqual(400, res.status_code)
+
     def test_list_favorite_post(self):
         self.register('alice', 'alicealice')
         for i in range(10):
