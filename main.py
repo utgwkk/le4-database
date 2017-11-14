@@ -528,10 +528,16 @@ def list_favorite():
 def create_favorite(post_id):
     with db() as conn:
         c = conn.cursor()
-        c.execute('''
-        INSERT INTO favorites (user_id, post_id)
-        VALUES (%s, %s)
-        ''', (session['user_id'], post_id,))
+        try:
+            c.execute('''
+            INSERT INTO favorites (user_id, post_id)
+            VALUES (%s, %s)
+            ''', (session['user_id'], post_id,))
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
+                abort(400)
+            else:
+                raise e
     return redirect(url_for('show_post', id=post_id))
 
 
