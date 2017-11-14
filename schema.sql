@@ -14,6 +14,50 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET row_security = off;
 
+SET search_path = public, pg_catalog;
+
+ALTER TABLE ONLY public.relations DROP CONSTRAINT relations_following_id_fkey;
+ALTER TABLE ONLY public.relations DROP CONSTRAINT relations_follower_id_fkey;
+ALTER TABLE ONLY public.posts DROP CONSTRAINT posts_user_id_fkey;
+ALTER TABLE ONLY public.favorites DROP CONSTRAINT favorites_user_id_fkey;
+ALTER TABLE ONLY public.favorites DROP CONSTRAINT favorites_post_id_fkey;
+ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_user_id_fkey;
+ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_post_id_fkey;
+DROP INDEX public.created_at;
+DROP INDEX public.comments_post_id;
+ALTER TABLE ONLY public.users DROP CONSTRAINT users_username_key;
+ALTER TABLE ONLY public.users DROP CONSTRAINT users_pkey;
+ALTER TABLE ONLY public.relations DROP CONSTRAINT relations_pkey;
+ALTER TABLE ONLY public.posts DROP CONSTRAINT posts_pkey;
+ALTER TABLE ONLY public.favorites DROP CONSTRAINT favorites_pkey;
+ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_pkey;
+ALTER TABLE public.users ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.posts ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.comments ALTER COLUMN id DROP DEFAULT;
+DROP SEQUENCE public.users_id_seq;
+DROP TABLE public.users;
+DROP TABLE public.relations;
+DROP SEQUENCE public.posts_id_seq;
+DROP TABLE public.posts;
+DROP TABLE public.favorites;
+DROP SEQUENCE public.comments_id_seq;
+DROP TABLE public.comments;
+DROP EXTENSION plpgsql;
+DROP SCHEMA public;
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA public;
+
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON SCHEMA public IS 'standard public schema';
+
+
 --
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
 --
@@ -297,6 +341,13 @@ ALTER TABLE ONLY relations
 
 ALTER TABLE ONLY relations
     ADD CONSTRAINT relations_following_id_fkey FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: public; Type: ACL; Schema: -; Owner: -
+--
+
+GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
 --
