@@ -87,8 +87,8 @@ CREATE TABLE posts (
     title text NOT NULL,
     description text NOT NULL,
     path text NOT NULL,
-    created_at date DEFAULT now(),
-    updated_at date DEFAULT now()
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now()
 );
 
 
