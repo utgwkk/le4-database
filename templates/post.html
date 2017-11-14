@@ -4,9 +4,9 @@
   <div class="panel-heading">{{ title }}</div>
   <div class="panel-body" style="text-align: center">
     <p>{{ description }}</p>
-    {% if logged_in %}
-      {% if user_id != current_user['id'] %}
-        {% if favorites(session['user_id'], id) %}
+    {% if logged_in() %}
+      {% if user_id != current_user()['id'] %}
+        {% if favorites(session.get('user_id'), id) %}
         <form action="{{ url_for('delete_favorite', post_id=id) }}" method="POST">
           <button type="submit" class="btn btn-danger">Unfavorite <span class="badge">{{ favorites_count }} users</span></button>
         {% else %}
@@ -27,7 +27,7 @@
     </div>
   </div>
   <div class="panel-footer">
-    {% if logged_in %}
+    {% if logged_in() %}
       <form class="form-horizontal" action="{{ url_for('post_comment', post_id=id) }}" method="POST">
         <div class="form-group">
           <label for="content" class="col-lg-3 control-label">Content <strong>(required)</strong></label>
@@ -47,8 +47,8 @@
     </ul>
   </div>
 </div>
-{% if logged_in %}
-  {% if user_id == current_user['id'] %}
+{% if logged_in() %}
+  {% if user_id == current_user()['id'] %}
     <form action="{{ url_for('delete_post', id=id)}}" method="POST" id="delete-post">
       <button type="submit" class="btn btn-danger btn-lg btn-block">Delete this post</button>
     </form>
