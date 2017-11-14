@@ -490,11 +490,17 @@ def post_comment(post_id):
     content = request.form['content']
     with db() as conn:
         c = conn.cursor()
-        c.execute('''
-        INSERT INTO comments
-        (post_id, user_id, content) VALUES
-        (%s, %s, %s)
-        ''', (post_id, session['user_id'], content))
+        try:
+            c.execute('''
+            INSERT INTO comments
+            (post_id, user_id, content) VALUES
+            (%s, %s, %s)
+            ''', (post_id, session['user_id'], content))
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
+                abort(400)
+            else:
+                raise e
     return redirect(url_for('show_post', id=post_id))
 
 
