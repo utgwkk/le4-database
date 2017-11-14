@@ -328,11 +328,11 @@ def users_follower(username):
 @must_login
 def follow():
     username = request.form.get('username', '')
-    user_id = get_user_id_by_username(username)
     with db() as conn:
         c = conn.cursor()
         c.execute('INSERT INTO relations (follower_id, following_id) '
-                  'VALUES (%s, %s)', (session['user_id'], user_id))
+                  'VALUES (%s, (SELECT id FROM users WHERE username = %s))',
+                  (session['user_id'], username))
     flash('Follow successful', 'info')
     return redirect(url_for('userpage', username=username))
 
@@ -341,12 +341,12 @@ def follow():
 @must_login
 def unfollow():
     username = request.form.get('username', '')
-    user_id = get_user_id_by_username(username)
     with db() as conn:
         c = conn.cursor()
         c.execute('DELETE FROM relations '
-                  'WHERE follower_id = %s AND following_id = %s',
-                  (session['user_id'], user_id))
+                  'WHERE follower_id = %s AND '
+                  'following_id = (SELECT id FROM users WHERE username = %s)',
+                  (session['user_id'], username))
     flash('Unfollow successful', 'info')
     return redirect(url_for('userpage', username=username))
 
