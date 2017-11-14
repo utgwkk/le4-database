@@ -80,6 +80,12 @@ class UserTest(AppTestCase):
         res = self.unfollow('bobby')
         self.assertIn(b'Unfollow successful', res.data)
 
+    def test_cannot_follow_not_exist_user(self):
+        self.register('alice', 'alicealice')
+
+        res = self.follow('notexistuser')
+        self.assertEqual(400, res.status_code)
+
     def test_following_list(self):
         self.register('alice', 'alicealice')
         self.logout()

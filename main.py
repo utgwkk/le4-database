@@ -330,9 +330,16 @@ def follow():
     username = request.form.get('username', '')
     with db() as conn:
         c = conn.cursor()
-        c.execute('INSERT INTO relations (follower_id, following_id) '
-                  'VALUES (%s, (SELECT id FROM users WHERE username = %s))',
-                  (session['user_id'], username))
+        try:
+            c.execute('''
+            INSERT INTO relations (follower_id, following_id)
+            VALUES (%s, (SELECT id FROM users WHERE username = %s))
+            ''', (session['user_id'], username))
+        except psycopg2.Error as e:
+            if e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+                abort(400)
+            else:
+                raise e
     flash('Follow successful', 'info')
     return redirect(url_for('userpage', username=username))
 
@@ -343,10 +350,11 @@ def unfollow():
     username = request.form.get('username', '')
     with db() as conn:
         c = conn.cursor()
-        c.execute('DELETE FROM relations '
-                  'WHERE follower_id = %s AND '
-                  'following_id = (SELECT id FROM users WHERE username = %s)',
-                  (session['user_id'], username))
+        c.execute('''
+        DELETE FROM relations
+        WHERE follower_id = %s AND
+        following_id = (SELECT id FROM users WHERE username = %s)
+        ''', (session['user_id'], username))
     flash('Unfollow successful', 'info')
     return redirect(url_for('userpage', username=username))
 
