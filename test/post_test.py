@@ -19,6 +19,14 @@ class PostTest(AppTestCase):
         res = self.upload(None, 'hoge', 'fuga')
         self.assertIn(b'No file specified', res.data)
 
+    def test_post_not_exist_should_be_404(self):
+        res = self.client.get('/post/1')
+        self.assertEqual(404, res.status_code)
+
+    def test_post_image_not_exist_should_be_404(self):
+        res = self.client.get('/post/1/image')
+        self.assertEqual(404, res.status_code)
+
     def test_visit_upload_page(self):
         self.register('alice', 'alicealice')
 

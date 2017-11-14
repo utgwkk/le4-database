@@ -427,7 +427,11 @@ def show_post(id):
             FROM posts p
             WHERE id = %s
         ''', (id,))
-        data = dict(c.fetchone())
+        row = c.fetchone()
+        if row is None:
+            abort(404)
+
+        data = dict(row)
         c.execute(
             'SELECT COUNT(*) AS cnt FROM favorites WHERE post_id = %s',
             (id,)
@@ -469,7 +473,11 @@ def image(id):
             SELECT path FROM posts
             WHERE id = %s
         ''', (id,))
-    path = c.fetchone()['path']
+    row = c.fetchone()
+    if row is None:
+        abort(404)
+
+    path = row['path']
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], path)
     with open(filepath, 'rb') as f:
         data = f.read()
