@@ -141,6 +141,29 @@ def favorites(user_id, post_id):
     return c.fetchone() is not None
 
 
+@helper
+def calculate_notification_count():
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+        SELECT COUNT(*) AS cnt
+        FROM events e
+        WHERE
+        COALESCE(e.created_at > (
+            SELECT updated_at FROM event_haveread
+            WHERE user_id = %s
+        ), TRUE) AND ((
+            e.source_id IN (SELECT id FROM posts WHERE user_id = %s)
+            AND e.invoker_id <> %s
+        ) OR (
+            e.invoker_id IN (
+                SELECT following_id FROM relations WHERE follower_id = %s
+            ) AND e.type <> 'comment' AND e.type <> 'favorite'
+        ) OR (e.type = 'follow' AND e.source_id = %s))
+        ''', [session['user_id']] * 5)
+    return c.fetchone()['cnt'] or 0
+
+
 def must_login(f):
     @wraps(f)
     def _inner(*args, **kwargs):
@@ -547,6 +570,42 @@ def create_favorite(post_id):
     return redirect(url_for('show_post', id=post_id))
 
 
+@app.route('/events')
+@must_login
+def list_events():
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+        SELECT
+        e.*, u.username,
+        p.title
+        FROM events e
+        INNER JOIN users u
+        ON e.invoker_id = u.id
+        LEFT JOIN posts p
+        ON e.source_id = p.id
+        WHERE
+        COALESCE(e.created_at > (
+            SELECT updated_at FROM event_haveread
+            WHERE user_id = %s
+        ), TRUE) AND ((
+            e.source_id IN (SELECT id FROM posts WHERE user_id = %s)
+            AND e.invoker_id <> %s
+        ) OR (
+            e.invoker_id IN (
+                SELECT following_id FROM relations WHERE follower_id = %s
+            ) AND e.type <> 'comment' AND e.type <> 'favorite'
+        ) OR (e.type = 'follow' AND e.source_id = %s))
+        ''', [session['user_id']] * 5)
+        events = c.fetchall()
+        c.execute('''
+        INSERT INTO event_haveread (user_id) VALUES (%s)
+        ON CONFLICT ON CONSTRAINT event_haveread_pkey
+        DO UPDATE SET updated_at = NOW()
+        ''', (session['user_id'],))
+    return render_template('notifications.html', events=events)
+
+
 @app.route('/unfavorite/<int:post_id>', methods=['POST'])
 @must_login
 def delete_favorite(post_id):
@@ -564,7 +623,7 @@ def initialize():
         c = conn.cursor()
         c.execute('''
         TRUNCATE
-        relations, comments, favorites, posts, users
+        relations, comments, favorites, posts, users, event_haveread
         RESTART IDENTITY CASCADE
         ''')
 

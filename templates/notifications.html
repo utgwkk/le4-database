@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block body %}
+<h2>Notifications</h2>
+{% if events %}
+  <ul class="list-group">
+    {% for event in events %}
+      <li class="list-group-item">
+        <p class="list-group-item-text">
+          {% if event['type'] != 'follow' %}
+            <span class="thumbnail" style="background-image: url('{{ url_for('image', id=event['source_id']) }}')"></span>
+          {% endif %}
+          <a href="{{ url_for('userpage', username=event['username']) }}">@{{ event['username'] }}</a> 
+          {% if event['type'] == 'post' %}
+            posted <a href="{{ url_for('show_post', id=event['source_id']) }}">{{ event['title'] }}</a>.
+          {% elif event['type'] == 'favorite' %}
+            favorited <a href="{{ url_for('show_post', id=event['source_id']) }}">{{ event['title'] }}</a>.
+          {% elif event['type'] == 'comment' %}
+            posted a comment on  <a href="{{ url_for('show_post', id=event['source_id']) }}">{{ event['title'] }}</a>.
+          {% elif event['type'] == 'follow' %}
+            followed you.
+          {% endif %}
+        </p>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>There is no unread notification.</p>
+{% endif %}
+{% endblock %}
