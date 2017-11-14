@@ -71,22 +71,25 @@ def validate_user_params(username, password):
 
 
 def authenticate(username, password):
-    c = db().cursor()
-    c.execute('SELECT password, salt FROM users WHERE username = %s',
-              (username,))
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('SELECT password, salt FROM users WHERE username = %s',
+                  (username,))
     row = c.fetchone()
     return row and passhash(password, row['salt']) == row['password']
 
 
 def get_user_id_by_username(username):
-    c = db().cursor()
-    c.execute('SELECT id FROM users WHERE username = %s', (username,))
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('SELECT id FROM users WHERE username = %s', (username,))
     return c.fetchone()['id']
 
 
 def get_username_by_user_id(user_id):
-    c = db().cursor()
-    c.execute('SELECT username FROM users WHERE id = %s', (user_id,))
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('SELECT username FROM users WHERE id = %s', (user_id,))
     return c.fetchone()['username']
 
 
@@ -115,26 +118,29 @@ def logged_in():
 
 @helper
 def current_user():
-    c = db().cursor()
-    c.execute('SELECT * FROM users WHERE id = %s', (session.get('user_id'),))
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('SELECT * FROM users WHERE id = %s', (session.get('user_id'),))
     return c.fetchone()
 
 
 @helper
 def follows(follower_id, following_id):
-    c = db().cursor()
-    c.execute('SELECT 1 FROM relations '
-              'WHERE follower_id = %s AND following_id = %s',
-              (follower_id, following_id))
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('SELECT 1 FROM relations '
+                  'WHERE follower_id = %s AND following_id = %s',
+                  (follower_id, following_id))
     return c.fetchone() is not None
 
 
 @helper
 def favorites(user_id, post_id):
-    c = db().cursor()
-    c.execute('SELECT 1 FROM favorites '
-              'WHERE user_id = %s AND post_id = %s',
-              (user_id, post_id))
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('SELECT 1 FROM favorites '
+                  'WHERE user_id = %s AND post_id = %s',
+                  (user_id, post_id))
     return c.fetchone() is not None
 
 
@@ -151,27 +157,31 @@ def must_login(f):
 
 @app.route('/')
 def index():
-    c = db().cursor()
-    c.execute('''
-        SELECT p.id, p.title, p.description, u.username
-        FROM posts p
-        LEFT JOIN users u
-        ON p.user_id = u.id
-        ORDER BY p.id DESC LIMIT 8
-    ''')
-    posts = c.fetchall()
-    if logged_in():
+    with db() as conn:
+        c = conn.cursor()
         c.execute('''
             SELECT p.id, p.title, p.description, u.username
             FROM posts p
             LEFT JOIN users u
             ON p.user_id = u.id
-            WHERE p.user_id IN (
-                SELECT following_id FROM relations
-                WHERE follower_id = %s
-            )
             ORDER BY p.id DESC LIMIT 8
-        ''', (session['user_id'],))
+        ''')
+    posts = c.fetchall()
+
+    if logged_in():
+        with db() as conn:
+            c = conn.cursor()
+            c.execute('''
+                SELECT p.id, p.title, p.description, u.username
+                FROM posts p
+                LEFT JOIN users u
+                ON p.user_id = u.id
+                WHERE p.user_id IN (
+                    SELECT following_id FROM relations
+                    WHERE follower_id = %s
+                )
+                ORDER BY p.id DESC LIMIT 8
+            ''', (session['user_id'],))
         posts_following = c.fetchall()
     else:
         posts_following = []
@@ -280,16 +290,17 @@ def following():
 
 @app.route('/@<string:username>/following')
 def users_following(username):
-    c = db().cursor()
-    c.execute('''
-    SELECT u.* FROM relations r
-    INNER JOIN users u
-    ON u.id = r.following_id AND r.follower_id = (
-        SELECT id FROM users
-        WHERE username = %s
-    )
-    ORDER BY created_at DESC
-    ''', (username,))
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+        SELECT u.* FROM relations r
+        INNER JOIN users u
+        ON u.id = r.following_id AND r.follower_id = (
+            SELECT id FROM users
+            WHERE username = %s
+        )
+        ORDER BY created_at DESC
+        ''', (username,))
     return render_template('following.html', users=c.fetchall())
 
 
@@ -302,16 +313,17 @@ def follower():
 
 @app.route('/@<string:username>/follower')
 def users_follower(username):
-    c = db().cursor()
-    c.execute('''
-    SELECT u.* FROM relations r
-    INNER JOIN users u
-    ON u.id = r.follower_id AND r.following_id = (
-        SELECT id FROM users
-        WHERE username = %s
-    )
-    ORDER BY created_at DESC
-    ''', (username,))
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+        SELECT u.* FROM relations r
+        INNER JOIN users u
+        ON u.id = r.follower_id AND r.following_id = (
+            SELECT id FROM users
+            WHERE username = %s
+        )
+        ORDER BY created_at DESC
+        ''', (username,))
     return render_template('follower.html', users=c.fetchall())
 
 
@@ -396,41 +408,43 @@ def upload():
 
 @app.route('/posts')
 def list_posts():
-    c = db().cursor()
-    c.execute('''
-        SELECT p.id, p.title, p.description, u.username
-        FROM posts p
-        LEFT JOIN users u
-        ON p.user_id = u.id
-        ORDER BY p.id DESC
-    ''')
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+            SELECT p.id, p.title, p.description, u.username
+            FROM posts p
+            LEFT JOIN users u
+            ON p.user_id = u.id
+            ORDER BY p.id DESC
+        ''')
     posts = c.fetchall()
     return render_template('posts.html', posts=posts)
 
 
 @app.route('/post/<int:id>')
 def show_post(id):
-    c = db().cursor()
-    c.execute('''
-        SELECT p.id, p.title, p.description, p.path, p.user_id
-        FROM posts p
-        WHERE id = %s
-    ''', (id,))
-    data = dict(c.fetchone())
-    c.execute(
-        'SELECT COUNT(*) AS cnt FROM favorites WHERE post_id = %s',
-        (id,)
-    )
-    data['favorites_count'] = c.fetchone()['cnt']
-    c.execute('''
-        SELECT c.content, c.created_at, u.username
-        FROM comments c
-        INNER JOIN users u
-        ON c.user_id = u.id
-        WHERE c.post_id = %s
-        ORDER BY c.created_at DESC
-    ''', (id,))
-    data['comments'] = c.fetchall()
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+            SELECT p.id, p.title, p.description, p.path, p.user_id
+            FROM posts p
+            WHERE id = %s
+        ''', (id,))
+        data = dict(c.fetchone())
+        c.execute(
+            'SELECT COUNT(*) AS cnt FROM favorites WHERE post_id = %s',
+            (id,)
+        )
+        data['favorites_count'] = c.fetchone()['cnt']
+        c.execute('''
+            SELECT c.content, c.created_at, u.username
+            FROM comments c
+            INNER JOIN users u
+            ON c.user_id = u.id
+            WHERE c.post_id = %s
+            ORDER BY c.created_at DESC
+        ''', (id,))
+        data['comments'] = c.fetchall()
     return render_template('post.html', **data)
 
 
@@ -438,7 +452,7 @@ def show_post(id):
 @must_login
 def delete_post(id):
     with db() as conn:
-        c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        c = conn.cursor()
         c.execute('SELECT user_id FROM posts WHERE id = %s', (id,))
         post_user_id = c.fetchone()['user_id']
         if session['user_id'] != post_user_id:
@@ -452,11 +466,12 @@ def delete_post(id):
 
 @app.route('/post/<int:id>/image')
 def image(id):
-    c = db().cursor()
-    c.execute('''
-        SELECT path FROM posts
-        WHERE id = %s
-    ''', (id,))
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+            SELECT path FROM posts
+            WHERE id = %s
+        ''', (id,))
     path = c.fetchone()['path']
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], path)
     with open(filepath, 'rb') as f:
@@ -481,17 +496,18 @@ def post_comment(post_id):
 @app.route('/favorites')
 @must_login
 def list_favorite():
-    c = db().cursor()
-    c.execute('''
-    SELECT p.id, p.title, p.description, u.username
-    FROM favorites f
-    INNER JOIN posts p
-    ON f.user_id = %s
-    AND f.post_id = p.id
-    INNER JOIN users u
-    ON p.user_id = u.id
-    ORDER BY f.created_at DESC
-    ''', (session['user_id'],))
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+        SELECT p.id, p.title, p.description, u.username
+        FROM favorites f
+        INNER JOIN posts p
+        ON f.user_id = %s
+        AND f.post_id = p.id
+        INNER JOIN users u
+        ON p.user_id = u.id
+        ORDER BY f.created_at DESC
+        ''', (session['user_id'],))
     posts = c.fetchall()
     return render_template('favorites.html', posts=posts)
 
