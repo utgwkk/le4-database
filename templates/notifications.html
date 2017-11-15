@@ -4,7 +4,7 @@
 {% if events %}
   <ul class="list-group">
     {% for event in events %}
-      <li class="list-group-item">
+      <li class="list-group-item" data-event-type="{{ event['type']}}" data-unread="{{ event['unread'] }}">
         <p class="list-group-item-text">
           {% if event['type'] != 'follow' %}
             <span class="thumbnail" style="background-image: url('{{ url_for('image', id=event['source_id']) }}')"></span>

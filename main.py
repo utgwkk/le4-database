@@ -158,7 +158,7 @@ def calculate_notification_count():
         ) OR (
             e.invoker_id IN (
                 SELECT following_id FROM relations WHERE follower_id = %s
-            ) AND e.type <> 'comment' AND e.type <> 'favorite'
+            ) AND e.type = 'post'
         ) OR (e.type = 'follow' AND e.source_id = %s))
         ''', [session['user_id']] * 5)
     return c.fetchone()['cnt'] or 0
@@ -578,24 +578,25 @@ def list_events():
         c.execute('''
         SELECT
         e.*, u.username,
-        p.title
+        p.title,
+        COALESCE(e.created_at > (
+            SELECT updated_at FROM event_haveread
+            WHERE user_id = %s
+        ), TRUE)::int AS unread
         FROM events e
         INNER JOIN users u
         ON e.invoker_id = u.id
         LEFT JOIN posts p
         ON e.source_id = p.id
         WHERE
-        COALESCE(e.created_at > (
-            SELECT updated_at FROM event_haveread
-            WHERE user_id = %s
-        ), TRUE) AND ((
+        (
             e.source_id IN (SELECT id FROM posts WHERE user_id = %s)
             AND e.invoker_id <> %s
         ) OR (
             e.invoker_id IN (
                 SELECT following_id FROM relations WHERE follower_id = %s
-            ) AND e.type <> 'comment' AND e.type <> 'favorite'
-        ) OR (e.type = 'follow' AND e.source_id = %s))
+            ) AND e.type = 'post'
+        ) OR (e.type = 'follow' AND e.source_id = %s)
         ''', [session['user_id']] * 5)
         events = c.fetchall()
         c.execute('''
