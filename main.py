@@ -650,6 +650,7 @@ def list_events():
         LEFT JOIN posts p
         ON e.source_id = p.id
         WHERE receiver_id = %s
+        ORDER BY id DESC
         ''', [session['user_id']] * 2)
         events = c.fetchall()
         c.execute('''
