@@ -600,13 +600,13 @@ def create_favorite(post_id):
             c.execute('''
             INSERT INTO events (receiver_id, type, source_id, invoker_id)
             SELECT
-                follower_id AS receiver_id,
+                user_id AS receiver_id,
                 event_type('favorite') AS type,
-                LASTVAL() AS source_id,
+                id AS source_id,
                 %s AS invoker_id
-            FROM relations
-            WHERE following_id = %s
-            ''', (session['user_id'], session['user_id']))
+            FROM posts
+            WHERE id = %s
+            ''', (session['user_id'], post_id))
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
                 abort(400)
