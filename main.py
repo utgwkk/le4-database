@@ -615,6 +615,22 @@ def create_favorite(post_id):
     return redirect(url_for('show_post', id=post_id))
 
 
+@app.route('/unfavorite/<int:post_id>', methods=['POST'])
+@must_login
+def delete_favorite(post_id):
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+        DELETE FROM favorites
+        WHERE user_id = %s AND post_id = %s
+        ''', (session['user_id'], post_id,))
+        c.execute('''
+        DELETE FROM events
+        WHERE invoker_id = %s AND source_id = %s AND type = 'favorite'
+        ''', (session['user_id'], post_id))
+    return redirect(url_for('show_post', id=post_id))
+
+
 @app.route('/events')
 @must_login
 def list_events():
@@ -642,22 +658,6 @@ def list_events():
         DO UPDATE SET updated_at = NOW()
         ''', (session['user_id'],))
     return render_template('notifications.html', events=events)
-
-
-@app.route('/unfavorite/<int:post_id>', methods=['POST'])
-@must_login
-def delete_favorite(post_id):
-    with db() as conn:
-        c = conn.cursor()
-        c.execute('''
-        DELETE FROM favorites
-        WHERE user_id = %s AND post_id = %s
-        ''', (session['user_id'], post_id,))
-        c.execute('''
-        DELETE FROM events
-        WHERE invoker_id = %s AND source_id = %s AND type = 'favorite'
-        ''', (session['user_id'], post_id))
-    return redirect(url_for('show_post', id=post_id))
 
 
 def initialize():
