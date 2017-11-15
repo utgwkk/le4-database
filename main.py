@@ -149,18 +149,12 @@ def calculate_notification_count():
         SELECT COUNT(*) AS cnt
         FROM events e
         WHERE
-        COALESCE(e.created_at > (
+        receiver_id = %s
+        AND COALESCE(e.created_at > (
             SELECT updated_at FROM event_haveread
             WHERE user_id = %s
-        ), TRUE) AND ((
-            e.source_id IN (SELECT id FROM posts WHERE user_id = %s)
-            AND e.invoker_id <> %s
-        ) OR (
-            e.invoker_id IN (
-                SELECT following_id FROM relations WHERE follower_id = %s
-            ) AND e.type = 'post'
-        ) OR (e.type = 'follow' AND e.source_id = %s))
-        ''', [session['user_id']] * 5)
+        ), TRUE)
+        ''', [session['user_id']] * 2)
     return c.fetchone()['cnt'] or 0
 
 
@@ -356,6 +350,17 @@ def follow():
             INSERT INTO relations (follower_id, following_id)
             VALUES (%s, (SELECT id FROM users WHERE username = %s))
             ''', (session['user_id'], username))
+            c.execute('''
+            INSERT INTO events
+            (receiver_id, type, source_id, invoker_id)
+            SELECT
+                id AS receiver_id,
+                event_type('follow') AS type,
+                %s AS source_id,
+                %s AS invoker_id
+            FROM users
+            WHERE username = %s
+            ''', (session['user_id'], session['user_id'], username))
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
                 abort(400)
@@ -376,6 +381,12 @@ def unfollow():
         WHERE follower_id = %s AND
         following_id = (SELECT id FROM users WHERE username = %s)
         ''', (session['user_id'], username))
+        c.execute('''
+        DELETE FROM events
+        WHERE type = 'follow' AND
+        receiver_id = (SELECT id FROM users WHERE username = %s)
+        AND invoker_id = %s
+        ''', (username, session['user_id']))
     flash('Unfollow successful', 'info')
     return redirect(url_for('userpage', username=username))
 
@@ -425,6 +436,16 @@ def upload():
                       'VALUES (%s, %s, %s, %s) RETURNING id',
                       (session['user_id'], title, description, filename))
             new_post_id = c.fetchone()[0]
+            c.execute('''
+            INSERT INTO events (receiver_id, type, source_id, invoker_id)
+            SELECT
+                follower_id AS receiver_id,
+                event_type('post') AS type,
+                %s AS source_id,
+                %s AS invoker_id
+            FROM relations
+            WHERE following_id = %s
+            ''', (new_post_id, session['user_id'], session['user_id']))
             with open(filepath, 'wb') as f:
                 f.write(filedata)
         return redirect(url_for('show_post', id=new_post_id))
@@ -489,6 +510,10 @@ def delete_post(id):
             abort(403)
 
         c.execute('DELETE FROM posts WHERE id = %s', (id,))
+        c.execute('''
+        DELETE FROM events
+        WHERE type = 'post' AND source_id = %s
+        ''', (id,))
 
     flash('Delete successful', 'info')
     return redirect(url_for('index'))
@@ -525,6 +550,16 @@ def post_comment(post_id):
             (post_id, user_id, content) VALUES
             (%s, %s, %s)
             ''', (post_id, session['user_id'], content))
+            c.execute('''
+            INSERT INTO events (receiver_id, type, source_id, invoker_id)
+            SELECT
+                user_id AS receiver_id,
+                event_type('comment') AS type,
+                LASTVAL() AS source_id,
+                %s AS invoker_id
+            FROM posts
+            WHERE id = %s
+            ''', (session['user_id'], post_id))
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
                 abort(400)
@@ -562,6 +597,16 @@ def create_favorite(post_id):
             INSERT INTO favorites (user_id, post_id)
             VALUES (%s, %s)
             ''', (session['user_id'], post_id,))
+            c.execute('''
+            INSERT INTO events (receiver_id, type, source_id, invoker_id)
+            SELECT
+                follower_id AS receiver_id,
+                event_type('favorite') AS type,
+                LASTVAL() AS source_id,
+                %s AS invoker_id
+            FROM relations
+            WHERE following_id = %s
+            ''', (session['user_id'], session['user_id']))
         except psycopg2.Error as e:
             if e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
                 abort(400)
@@ -588,16 +633,8 @@ def list_events():
         ON e.invoker_id = u.id
         LEFT JOIN posts p
         ON e.source_id = p.id
-        WHERE
-        (
-            e.source_id IN (SELECT id FROM posts WHERE user_id = %s)
-            AND e.invoker_id <> %s
-        ) OR (
-            e.invoker_id IN (
-                SELECT following_id FROM relations WHERE follower_id = %s
-            ) AND e.type = 'post'
-        ) OR (e.type = 'follow' AND e.source_id = %s)
-        ''', [session['user_id']] * 5)
+        WHERE receiver_id = %s
+        ''', [session['user_id']] * 2)
         events = c.fetchall()
         c.execute('''
         INSERT INTO event_haveread (user_id) VALUES (%s)
@@ -616,6 +653,10 @@ def delete_favorite(post_id):
         DELETE FROM favorites
         WHERE user_id = %s AND post_id = %s
         ''', (session['user_id'], post_id,))
+        c.execute('''
+        DELETE FROM events
+        WHERE invoker_id = %s AND source_id = %s AND type = 'favorite'
+        ''', (session['user_id'], post_id))
     return redirect(url_for('show_post', id=post_id))
 
 
@@ -624,7 +665,7 @@ def initialize():
         c = conn.cursor()
         c.execute('''
         TRUNCATE
-        relations, comments, favorites, posts, users, event_haveread
+        relations, comments, favorites, posts, users, events, event_haveread
         RESTART IDENTITY CASCADE
         ''')
 

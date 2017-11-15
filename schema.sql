@@ -21,6 +21,8 @@ ALTER TABLE ONLY public.relations DROP CONSTRAINT relations_follower_id_fkey;
 ALTER TABLE ONLY public.posts DROP CONSTRAINT posts_user_id_fkey;
 ALTER TABLE ONLY public.favorites DROP CONSTRAINT favorites_user_id_fkey;
 ALTER TABLE ONLY public.favorites DROP CONSTRAINT favorites_post_id_fkey;
+ALTER TABLE ONLY public.events DROP CONSTRAINT events_receiver_id_fkey;
+ALTER TABLE ONLY public.events DROP CONSTRAINT events_invoker_id_fkey;
 ALTER TABLE ONLY public.event_haveread DROP CONSTRAINT event_haveread_user_id_fkey;
 ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_user_id_fkey;
 ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_post_id_fkey;
@@ -31,18 +33,21 @@ ALTER TABLE ONLY public.users DROP CONSTRAINT users_pkey;
 ALTER TABLE ONLY public.relations DROP CONSTRAINT relations_pkey;
 ALTER TABLE ONLY public.posts DROP CONSTRAINT posts_pkey;
 ALTER TABLE ONLY public.favorites DROP CONSTRAINT favorites_pkey;
+ALTER TABLE ONLY public.events DROP CONSTRAINT events_pkey;
 ALTER TABLE ONLY public.event_haveread DROP CONSTRAINT event_haveread_pkey;
 ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_pkey;
 ALTER TABLE public.users ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE public.posts ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.events ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE public.comments ALTER COLUMN id DROP DEFAULT;
 DROP SEQUENCE public.users_id_seq;
 DROP TABLE public.users;
-DROP SEQUENCE public.posts_id_seq;
-DROP VIEW public.events;
 DROP TABLE public.relations;
+DROP SEQUENCE public.posts_id_seq;
 DROP TABLE public.posts;
 DROP TABLE public.favorites;
+DROP SEQUENCE public.events_id_seq;
+DROP TABLE public.events;
 DROP TABLE public.event_haveread;
 DROP SEQUENCE public.comments_id_seq;
 DROP TABLE public.comments;
@@ -138,6 +143,40 @@ CREATE TABLE event_haveread (
 
 
 --
+-- Name: events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE events (
+    id integer NOT NULL,
+    receiver_id integer,
+    created_at timestamp without time zone DEFAULT now(),
+    type event_type NOT NULL,
+    source_id integer NOT NULL,
+    invoker_id integer
+);
+
+
+--
+-- Name: events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE events_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE events_id_seq OWNED BY events.id;
+
+
+--
 -- Name: favorites; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -164,53 +203,6 @@ CREATE TABLE posts (
 
 
 --
--- Name: relations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE relations (
-    follower_id integer NOT NULL,
-    following_id integer NOT NULL,
-    created_at timestamp without time zone DEFAULT now(),
-    CONSTRAINT relations_check CHECK ((follower_id <> following_id))
-);
-
-
---
--- Name: events; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW events AS
- SELECT v.created_at,
-    v.type,
-    v.source_id,
-    v.invoker_id
-   FROM ( SELECT posts.created_at,
-            'post'::event_type AS type,
-            posts.id AS source_id,
-            posts.user_id AS invoker_id
-           FROM posts
-        UNION ALL
-         SELECT favorites.created_at,
-            'favorite'::event_type AS type,
-            favorites.post_id AS source_id,
-            favorites.user_id AS invoker_id
-           FROM favorites
-        UNION ALL
-         SELECT comments.created_at,
-            'comment'::event_type AS type,
-            comments.post_id AS source_id,
-            comments.user_id AS invoker_id
-           FROM comments
-        UNION ALL
-         SELECT relations.created_at,
-            'follow'::event_type AS type,
-            relations.following_id AS source_id,
-            relations.follower_id AS invoker_id
-           FROM relations) v
-  ORDER BY v.created_at DESC;
-
-
---
 -- Name: posts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -228,6 +220,18 @@ CREATE SEQUENCE posts_id_seq
 --
 
 ALTER SEQUENCE posts_id_seq OWNED BY posts.id;
+
+
+--
+-- Name: relations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE relations (
+    follower_id integer NOT NULL,
+    following_id integer NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    CONSTRAINT relations_check CHECK ((follower_id <> following_id))
+);
 
 
 --
@@ -274,6 +278,13 @@ ALTER TABLE ONLY comments ALTER COLUMN id SET DEFAULT nextval('comments_id_seq':
 
 
 --
+-- Name: events id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY events ALTER COLUMN id SET DEFAULT nextval('events_id_seq'::regclass);
+
+
+--
 -- Name: posts id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -301,6 +312,14 @@ ALTER TABLE ONLY comments
 
 ALTER TABLE ONLY event_haveread
     ADD CONSTRAINT event_haveread_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: events events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY events
+    ADD CONSTRAINT events_pkey PRIMARY KEY (id);
 
 
 --
@@ -379,6 +398,22 @@ ALTER TABLE ONLY comments
 
 ALTER TABLE ONLY event_haveread
     ADD CONSTRAINT event_haveread_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: events events_invoker_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY events
+    ADD CONSTRAINT events_invoker_id_fkey FOREIGN KEY (invoker_id) REFERENCES users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: events events_receiver_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY events
+    ADD CONSTRAINT events_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE;
 
 
 --
