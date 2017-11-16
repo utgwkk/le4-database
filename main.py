@@ -317,7 +317,8 @@ def users_following(username):
         )
         ORDER BY created_at DESC
         ''', (username,))
-    return render_template('following.html', users=c.fetchall())
+    return render_template('following.html', users=c.fetchall(),
+                           username=username)
 
 
 @app.route('/follower')
@@ -340,7 +341,8 @@ def users_follower(username):
         )
         ORDER BY created_at DESC
         ''', (username,))
-    return render_template('follower.html', users=c.fetchall())
+    return render_template('follower.html', users=c.fetchall(),
+                           username=username)
 
 
 @app.route('/follow', methods=['POST'])
