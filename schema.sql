@@ -26,6 +26,7 @@ ALTER TABLE ONLY public.events DROP CONSTRAINT events_invoker_id_fkey;
 ALTER TABLE ONLY public.event_haveread DROP CONSTRAINT event_haveread_user_id_fkey;
 ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_user_id_fkey;
 ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_post_id_fkey;
+DROP INDEX public.events_receiver_id;
 DROP INDEX public.created_at;
 DROP INDEX public.comments_post_id;
 ALTER TABLE ONLY public.users DROP CONSTRAINT users_username_key;
@@ -374,6 +375,13 @@ CREATE INDEX comments_post_id ON comments USING btree (post_id);
 --
 
 CREATE INDEX created_at ON favorites USING btree (created_at);
+
+
+--
+-- Name: events_receiver_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX events_receiver_id ON events USING btree (receiver_id);
 
 
 --
