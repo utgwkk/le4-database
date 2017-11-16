@@ -150,10 +150,10 @@ def calculate_notification_count():
         FROM events e
         WHERE
         receiver_id = %s
-        AND COALESCE(e.created_at > (
+        AND e.created_at > (
             SELECT updated_at FROM event_haveread
             WHERE user_id = %s
-        ), TRUE)
+        )
         ''', [session['user_id']] * 2)
     return c.fetchone()['cnt'] or 0
 
@@ -252,6 +252,11 @@ def register_user():
                     'VALUES (%s, %s, %s, %s) RETURNING id',
                     (username, salt, passhash(password, salt), description)
                 )
+                lastrowid = c.fetchone()[0]
+                c.execute('''
+                    INSERT INTO event_haveread
+                    (user_id) VALUES (LASTVAL())
+                ''')
             except psycopg2.Error as e:
                 if e.pgcode == psycopg2.errorcodes.UNIQUE_VIOLATION:
                     flash(
@@ -262,7 +267,6 @@ def register_user():
                         f'Unknown error: {e.pgerror}', 'error'
                     )
                 return redirect(url_for('register_user'))
-        lastrowid = c.fetchone()[0]
         session['user_id'] = lastrowid
         flash('Registration succeeded', 'info')
         return redirect(url_for('mypage'))
@@ -640,10 +644,10 @@ def list_events():
         SELECT
         e.*, u.username,
         p.title,
-        COALESCE(e.created_at > (
+        (e.created_at > (
             SELECT updated_at FROM event_haveread
             WHERE user_id = %s
-        ), TRUE)::int AS unread
+        ))::int AS unread
         FROM events e
         INNER JOIN users u
         ON e.invoker_id = u.id
@@ -654,9 +658,8 @@ def list_events():
         ''', [session['user_id']] * 2)
         events = c.fetchall()
         c.execute('''
-        INSERT INTO event_haveread (user_id) VALUES (%s)
-        ON CONFLICT ON CONSTRAINT event_haveread_pkey
-        DO UPDATE SET updated_at = NOW()
+        UPDATE event_haveread
+        SET updated_at = NOW() WHERE user_id = %s
         ''', (session['user_id'],))
     return render_template('notifications.html', events=events)
 
