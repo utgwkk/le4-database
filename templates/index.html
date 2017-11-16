@@ -11,6 +11,7 @@
         {% include "_post.html" %}
       {% endfor %}
     </ul>
+    <a href="{{ url_for('list_posts') }}">see all posts</a>
     {% if logged_in() %}
     <h2>Posts by following user</h2>
     <ul class="list-group">
