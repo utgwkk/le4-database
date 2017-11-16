@@ -644,18 +644,17 @@ def list_events():
         SELECT
         e.*, u.username,
         p.title,
-        (e.created_at > (
-            SELECT updated_at FROM event_haveread
-            WHERE user_id = %s
-        ))::int AS unread
+        (e.created_at > eh.updated_at)::int AS unread
         FROM events e
+        INNER JOIN event_haveread eh
+        ON e.receiver_id = eh.user_id
         INNER JOIN users u
         ON e.invoker_id = u.id
         LEFT JOIN posts p
         ON e.source_id = p.id
         WHERE receiver_id = %s
         ORDER BY id DESC
-        ''', [session['user_id']] * 2)
+        ''', (session['user_id'],))
         events = c.fetchall()
         c.execute('''
         UPDATE event_haveread
