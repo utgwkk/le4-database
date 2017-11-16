@@ -21,8 +21,12 @@ ALTER TABLE ONLY public.relations DROP CONSTRAINT relations_follower_id_fkey;
 ALTER TABLE ONLY public.posts DROP CONSTRAINT posts_user_id_fkey;
 ALTER TABLE ONLY public.favorites DROP CONSTRAINT favorites_user_id_fkey;
 ALTER TABLE ONLY public.favorites DROP CONSTRAINT favorites_post_id_fkey;
+ALTER TABLE ONLY public.events DROP CONSTRAINT events_receiver_id_fkey;
+ALTER TABLE ONLY public.events DROP CONSTRAINT events_invoker_id_fkey;
+ALTER TABLE ONLY public.event_haveread DROP CONSTRAINT event_haveread_user_id_fkey;
 ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_user_id_fkey;
 ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_post_id_fkey;
+DROP INDEX public.events_receiver_id;
 DROP INDEX public.created_at;
 DROP INDEX public.comments_post_id;
 ALTER TABLE ONLY public.users DROP CONSTRAINT users_username_key;
@@ -30,9 +34,12 @@ ALTER TABLE ONLY public.users DROP CONSTRAINT users_pkey;
 ALTER TABLE ONLY public.relations DROP CONSTRAINT relations_pkey;
 ALTER TABLE ONLY public.posts DROP CONSTRAINT posts_pkey;
 ALTER TABLE ONLY public.favorites DROP CONSTRAINT favorites_pkey;
+ALTER TABLE ONLY public.events DROP CONSTRAINT events_pkey;
+ALTER TABLE ONLY public.event_haveread DROP CONSTRAINT event_haveread_pkey;
 ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_pkey;
 ALTER TABLE public.users ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE public.posts ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.events ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE public.comments ALTER COLUMN id DROP DEFAULT;
 DROP SEQUENCE public.users_id_seq;
 DROP TABLE public.users;
@@ -40,8 +47,12 @@ DROP TABLE public.relations;
 DROP SEQUENCE public.posts_id_seq;
 DROP TABLE public.posts;
 DROP TABLE public.favorites;
+DROP SEQUENCE public.events_id_seq;
+DROP TABLE public.events;
+DROP TABLE public.event_haveread;
 DROP SEQUENCE public.comments_id_seq;
 DROP TABLE public.comments;
+DROP TYPE public.event_type;
 DROP EXTENSION plpgsql;
 DROP SCHEMA public;
 --
@@ -73,6 +84,18 @@ COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 
 
 SET search_path = public, pg_catalog;
+
+--
+-- Name: event_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE event_type AS ENUM (
+    'post',
+    'favorite',
+    'comment',
+    'follow'
+);
+
 
 SET default_with_oids = false;
 
@@ -108,6 +131,50 @@ CREATE SEQUENCE comments_id_seq
 --
 
 ALTER SEQUENCE comments_id_seq OWNED BY comments.id;
+
+
+--
+-- Name: event_haveread; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE event_haveread (
+    user_id integer NOT NULL,
+    updated_at timestamp without time zone DEFAULT now()
+);
+
+
+--
+-- Name: events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE events (
+    id integer NOT NULL,
+    receiver_id integer,
+    created_at timestamp without time zone DEFAULT now(),
+    type event_type NOT NULL,
+    source_id integer NOT NULL,
+    invoker_id integer
+);
+
+
+--
+-- Name: events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE events_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE events_id_seq OWNED BY events.id;
 
 
 --
@@ -212,6 +279,13 @@ ALTER TABLE ONLY comments ALTER COLUMN id SET DEFAULT nextval('comments_id_seq':
 
 
 --
+-- Name: events id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY events ALTER COLUMN id SET DEFAULT nextval('events_id_seq'::regclass);
+
+
+--
 -- Name: posts id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -231,6 +305,22 @@ ALTER TABLE ONLY users ALTER COLUMN id SET DEFAULT nextval('users_id_seq'::regcl
 
 ALTER TABLE ONLY comments
     ADD CONSTRAINT comments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: event_haveread event_haveread_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY event_haveread
+    ADD CONSTRAINT event_haveread_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: events events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY events
+    ADD CONSTRAINT events_pkey PRIMARY KEY (id);
 
 
 --
@@ -288,6 +378,13 @@ CREATE INDEX created_at ON favorites USING btree (created_at);
 
 
 --
+-- Name: events_receiver_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX events_receiver_id ON events USING btree (receiver_id);
+
+
+--
 -- Name: comments comments_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -301,6 +398,30 @@ ALTER TABLE ONLY comments
 
 ALTER TABLE ONLY comments
     ADD CONSTRAINT comments_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: event_haveread event_haveread_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY event_haveread
+    ADD CONSTRAINT event_haveread_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: events events_invoker_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY events
+    ADD CONSTRAINT events_invoker_id_fkey FOREIGN KEY (invoker_id) REFERENCES users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: events events_receiver_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY events
+    ADD CONSTRAINT events_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE;
 
 
 --
