@@ -4,9 +4,8 @@ from test.app_testcase import AppTestCase
 class UserTest(AppTestCase):
     def test_register(self):
         # Can register
-        res = self.register('alice', 'alicealice', 'hey yo')
+        res = self.register('alice', 'alicealice')
         self.assertIn(b'@alice', res.data)
-        self.assertIn(b'hey yo', res.data)
 
         # Can logout and login again
         self.logout()
@@ -14,7 +13,7 @@ class UserTest(AppTestCase):
         self.assertIn(b'@alice', res.data)
 
     def test_logout(self):
-        self.register('alice', 'alicealice', 'hey yo')
+        self.register('alice', 'alicealice')
         res = self.logout()
         self.assertNotIn(b'@alice', res.data)
 

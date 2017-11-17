@@ -235,7 +235,6 @@ def register_user():
     if request.method == 'POST':
         username = request.form.get('username', '')
         password = request.form.get('password', '')
-        description = request.form.get('description', '')
         try:
             validate_user_params(username, password)
         except ValidationError as e:
@@ -248,9 +247,9 @@ def register_user():
             try:
                 c.execute(
                     'INSERT INTO users '
-                    '(username, salt, password, description) '
-                    'VALUES (%s, %s, %s, %s) RETURNING id',
-                    (username, salt, passhash(password, salt), description)
+                    '(username, salt, password) '
+                    'VALUES (%s, %s, %s) RETURNING id',
+                    (username, salt, passhash(password, salt),)
                 )
                 lastrowid = c.fetchone()[0]
                 c.execute('''
@@ -479,9 +478,11 @@ def show_post(id):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
-            SELECT p.id, p.title, p.description, p.path, p.user_id
+            SELECT p.id, p.title, p.description, p.path, p.user_id, u.username
             FROM posts p
-            WHERE id = %s
+            INNER JOIN users u
+            ON p.user_id = u.id
+            WHERE p.id = %s
         ''', (id,))
         row = c.fetchone()
         if row is None:
