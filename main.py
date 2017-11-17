@@ -479,9 +479,11 @@ def show_post(id):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
-            SELECT p.id, p.title, p.description, p.path, p.user_id
+            SELECT p.id, p.title, p.description, p.path, p.user_id, u.username
             FROM posts p
-            WHERE id = %s
+            INNER JOIN users u
+            ON p.user_id = u.id
+            WHERE p.id = %s
         ''', (id,))
         row = c.fetchone()
         if row is None:

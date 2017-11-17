@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
 <div class="panel panel-primary">
-  <div class="panel-heading">{{ title }}</div>
+  <div class="panel-heading">{{ title }} (by <a href="{{ url_for('userpage', username=username) }}">@{{ username }}</a>)</div>
   <div class="panel-body" style="text-align: center">
     <p>{{ description }}</p>
     {% if logged_in() %}
