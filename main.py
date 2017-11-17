@@ -16,6 +16,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_from_directory,
     session,
     url_for,
 )
@@ -526,6 +527,11 @@ def delete_post(id):
     return redirect(url_for('index'))
 
 
+@app.route('/uploads/<path:filename>')
+def image_from_uploads(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
 @app.route('/post/<int:id>/image')
 def image(id):
     with db() as conn:
@@ -539,10 +545,7 @@ def image(id):
         abort(404)
 
     path = row['path']
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], path)
-    with open(filepath, 'rb') as f:
-        data = f.read()
-        return Response(data, mimetype=ext2mime(os.path.splitext(path)[1]))
+    return redirect(url_for('image_from_uploads', filename=path))
 
 
 @app.route('/post/<int:post_id>/comment', methods=['POST'])
