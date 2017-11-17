@@ -20,11 +20,14 @@ from flask import (
     session,
     url_for,
 )
+from flask_compress import Compress
 load_dotenv(find_dotenv())
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER')
 PERMITTED_MIMETYPES = {'image/jpeg', 'image/png', 'image/gif'}
+Compress(app)
+app.config['COMPRESS_MIMETYPES'] += list(PERMITTED_MIMETYPES)
 
 
 def connect_db():
@@ -675,10 +678,11 @@ def list_events():
         ORDER BY id DESC
         ''', (session['user_id'],))
         events = c.fetchall()
-        c.execute('''
-        UPDATE event_haveread
-        SET updated_at = NOW() WHERE user_id = %s
-        ''', (session['user_id'],))
+        if len(events) > 0 and bool(events[0]['unread']):
+            c.execute('''
+            UPDATE event_haveread
+            SET updated_at = NOW() WHERE user_id = %s
+            ''', (session['user_id'],))
     return render_template('notifications.html', events=events)
 
 
