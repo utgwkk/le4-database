@@ -675,10 +675,11 @@ def list_events():
         ORDER BY id DESC
         ''', (session['user_id'],))
         events = c.fetchall()
-        c.execute('''
-        UPDATE event_haveread
-        SET updated_at = NOW() WHERE user_id = %s
-        ''', (session['user_id'],))
+        if len(events) > 0 and bool(events[0]['unread']):
+            c.execute('''
+            UPDATE event_haveread
+            SET updated_at = NOW() WHERE user_id = %s
+            ''', (session['user_id'],))
     return render_template('notifications.html', events=events)
 
 
