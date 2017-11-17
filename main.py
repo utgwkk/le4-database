@@ -16,6 +16,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_from_directory,
     session,
     url_for,
 )
@@ -174,7 +175,7 @@ def index():
     with db() as conn:
         c = conn.cursor()
         c.execute('''
-            SELECT p.id, p.title, p.description, u.username
+            SELECT p.id, p.title, p.description, p.path, u.username
             FROM posts p
             LEFT JOIN users u
             ON p.user_id = u.id
@@ -186,7 +187,7 @@ def index():
         with db() as conn:
             c = conn.cursor()
             c.execute('''
-                SELECT p.id, p.title, p.description, u.username
+                SELECT p.id, p.title, p.description, p.path, u.username
                 FROM posts p
                 LEFT JOIN users u
                 ON p.user_id = u.id
@@ -287,7 +288,7 @@ def userpage(username):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
-            SELECT id, title, description FROM posts
+            SELECT id, title, description, path FROM posts
             WHERE user_id = %s
             ORDER BY created_at DESC
         ''', (user['id'],))
@@ -463,7 +464,7 @@ def list_posts():
     with db() as conn:
         c = conn.cursor()
         c.execute('''
-            SELECT p.id, p.title, p.description, u.username
+            SELECT p.id, p.title, p.description, p.path, u.username
             FROM posts p
             LEFT JOIN users u
             ON p.user_id = u.id
@@ -526,6 +527,11 @@ def delete_post(id):
     return redirect(url_for('index'))
 
 
+@app.route('/uploads/<path:filename>')
+def image_from_uploads(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
 @app.route('/post/<int:id>/image')
 def image(id):
     with db() as conn:
@@ -539,10 +545,7 @@ def image(id):
         abort(404)
 
     path = row['path']
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], path)
-    with open(filepath, 'rb') as f:
-        data = f.read()
-        return Response(data, mimetype=ext2mime(os.path.splitext(path)[1]))
+    return redirect(url_for('image_from_uploads', filename=path))
 
 
 @app.route('/post/<int:post_id>/comment', methods=['POST'])
@@ -581,7 +584,7 @@ def list_favorite():
     with db() as conn:
         c = conn.cursor()
         c.execute('''
-        SELECT p.id, p.title, p.description, u.username
+        SELECT p.id, p.title, p.description, p.path, u.username
         FROM favorites f
         INNER JOIN posts p
         ON f.user_id = %s
@@ -646,7 +649,7 @@ def list_events():
         c.execute('''
         SELECT
         e.*, u.username,
-        p.title,
+        p.title, p.path,
         (e.created_at > eh.updated_at)::int AS unread
         FROM events e
         INNER JOIN event_haveread eh

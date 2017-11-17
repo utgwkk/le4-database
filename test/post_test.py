@@ -10,7 +10,7 @@ class PostTest(AppTestCase):
         self.assertIn(b'fuga', res.data)
 
         # Check uploaded image
-        res = self.client.get('/post/1/image')
+        res = self.client.get('/post/1/image', follow_redirects=True)
         self.assertEqual(200, res.status_code)
         self.assertGreater(len(res.data), 0)
 
