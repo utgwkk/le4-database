@@ -1,17 +1,21 @@
 [[source]]
+
 verify_ssl = true
 url = "https://pypi.python.org/simple"
 name = "pypi"
 
+
 [packages]
 
 flask = "*"
-"python-dotenv" = "*"
+python-dotenv = "*"
 "psycopg2" = "*"
 
 
 [requires]
+
 python_version = "3.6"
+
 
 [dev-packages]
 
@@ -19,4 +23,5 @@ pycodestyle = "*"
 faker = "*"
 pytest = "*"
 coverage = "*"
-"pytest-timeout" = "*"
+pytest-timeout = "*"
+wsgi-lineprof = "*"
