@@ -171,6 +171,37 @@ def calculate_notification_count():
     return c.fetchone()['cnt'] or 0
 
 
+@helper
+def calculate_3f_count(username):
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+        SELECT (
+            SELECT COUNT(*) AS cnt
+            FROM relations r
+            INNER JOIN users u
+            ON r.follower_id = u.id
+            AND u.username = %s
+        ) AS following_count,
+        (
+            SELECT COUNT(*) AS cnt
+            FROM relations r
+            INNER JOIN users u
+            ON r.following_id = u.id
+            AND u.username = %s
+        ) AS follower_count,
+        (
+            SELECT COUNT(*) AS cnt
+            FROM favorites
+            WHERE user_id = (
+                SELECT id FROM users
+                WHERE username = %s
+            )
+        ) AS favorites_count
+        ''', [username] * 3)
+    return c.fetchone()
+
+
 def must_login(f):
     @wraps(f)
     def _inner(*args, **kwargs):
