@@ -24,6 +24,7 @@ load_dotenv(find_dotenv())
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER')
+PERMITTED_MIMETYPES = {'image/jpeg', 'image/png', 'image/gif'}
 
 
 def connect_db():
@@ -432,6 +433,10 @@ def upload():
         title = request.form['title']
         description = request.form['description']
         upload_file = request.files['file']
+        if upload_file.mimetype not in PERMITTED_MIMETYPES:
+            flash('You cannot upload the file; '
+                  'only JPEG / PNG / GIF is allowed', 'error')
+            return redirect(url_for('upload'))
         _, ext = os.path.splitext(upload_file.filename)
         filedata = upload_file.read()
         filename = sha256(filedata).hexdigest() + ext
