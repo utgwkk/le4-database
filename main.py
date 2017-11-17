@@ -24,6 +24,7 @@ load_dotenv(find_dotenv())
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER')
+PERMITTED_MIMETYPES = {'image/jpeg', 'image/png', 'image/gif'}
 
 
 def connect_db():
@@ -100,6 +101,14 @@ def ext2mime(ext):
         '.jpg': 'image/jpeg',
         '.png': 'image/png',
     }.get(ext)
+
+
+def mime2ext(mimetype):
+    return {
+        'image/gif': '.gif',
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+    }.get(mimetype)
 
 
 def helper(f):
@@ -432,7 +441,11 @@ def upload():
         title = request.form['title']
         description = request.form['description']
         upload_file = request.files['file']
-        _, ext = os.path.splitext(upload_file.filename)
+        if upload_file.mimetype not in PERMITTED_MIMETYPES:
+            flash('You cannot upload the file; '
+                  'only JPEG / PNG / GIF is allowed', 'error')
+            return redirect(url_for('upload'))
+        ext = mime2ext(upload_file.mimetype)
         filedata = upload_file.read()
         filename = sha256(filedata).hexdigest() + ext
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
