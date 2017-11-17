@@ -626,22 +626,31 @@ def post_comment(post_id):
 
 
 @app.route('/favorites')
+def list_my_favorite():
+    return redirect(url_for('list_favorite',
+                            username=current_user()['username']))
+
+
 @must_login
-def list_favorite():
+@app.route('/@<string:username>/favorites')
+def list_favorite(username):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
         SELECT p.id, p.title, p.description, p.path, u.username
         FROM favorites f
         INNER JOIN posts p
-        ON f.user_id = %s
+        ON f.user_id = (
+            SELECT id FROM users
+            WHERE username = %s
+        )
         AND f.post_id = p.id
         INNER JOIN users u
         ON p.user_id = u.id
         ORDER BY f.created_at DESC
-        ''', (session['user_id'],))
+        ''', (username,))
     posts = c.fetchall()
-    return render_template('favorites.html', posts=posts)
+    return render_template('favorites.html', posts=posts, username=username)
 
 
 @app.route('/favorite/<int:post_id>', methods=['POST'])

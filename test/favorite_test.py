@@ -34,7 +34,7 @@ class FavoriteTest(AppTestCase):
         for i in range(10):
             self.favorite(i + 1)
 
-        res = self.client.get('/favorites')
+        res = self.client.get('/favorites', follow_redirects=True)
         for i in range(10):
             self.assertIn(b'hoge%d' % i, res.data)
             self.assertIn(b'fuga%d' % i, res.data)

@@ -1,15 +1,14 @@
 {% extends "layout.html" %}
 {% block body %}
-{% set username = current_user()['username'] %}
 {% set ff_count = calculate_3f_count(username) %}
 <ul class="nav nav-tabs">
   <li class="nav-item"><a href="{{ url_for('userpage', username=username) }}">Profile</a></li>
   <li class="nav-item"><a href="{{ url_for('users_following', username=username) }}">Following<span class="badge">{{ ff_count['following_count'] }}</span></a></li>
   <li class="nav-item"><a href="{{ url_for('users_follower', username=username) }}">Follower<span class="badge">{{ ff_count['follower_count'] }}</span></a></li>
-  <li class="nav-item active"><a href="{{ url_for('list_favorite') }}">Favorites<span class="badge">{{ ff_count['favorites_count'] }}</span></a></li>
+  <li class="nav-item active"><a href="{{ url_for('list_favorite', username=username) }}">Favorites<span class="badge">{{ ff_count['favorites_count'] }}</span></a></li>
 </ul>
 <div>
-  <h2>Posts you favorited</h2>
+  <h2>@{{ username }}'s favorite posts</h2>
   <ul class="list-group">
     {% for post in posts %}
       {% include "_post.html" %}
