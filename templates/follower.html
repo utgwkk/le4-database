@@ -1,12 +1,15 @@
 {% extends "layout.html" %}
 {% block body %}
+{% set ff_count = calculate_3f_count(username) %}
 <ul class="nav nav-tabs">
   <li class="nav-item"><a href="{{ url_for('userpage', username=username) }}">Profile</a></li>
-  <li class="nav-item"><a href="{{ url_for('users_following', username=username) }}">Following</a></li>
-  <li class="nav-item active"><a href="{{ url_for('users_follower', username=username) }}">Follower</a></li>
+  <li class="nav-item"><a href="{{ url_for('users_following', username=username) }}">Following<span class="badge">{{ ff_count['following_count'] }}</span></a></li>
+  <li class="nav-item active"><a href="{{ url_for('users_follower', username=username) }}">Follower<span class="badge">{{ ff_count['follower_count'] }}</span></a></li>
+  <li class="nav-item"><a href="{{ url_for('list_favorite', username=username) }}">Favorites<span class="badge">{{ ff_count['favorites_count'] }}</span></a></li>
 </ul>
 <div class="list-group">
   {% if users %}
+    <h2>Users following @{{ username }}</h2>
     {% for user in users %}
     <div class="list-group-item">
       <a href="{{ url_for('userpage', username=user['username']) }}"<h4 class="list-group-item-heading">@{{ user['username'] }}</h4></a>
