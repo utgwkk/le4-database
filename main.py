@@ -103,6 +103,14 @@ def ext2mime(ext):
     }.get(ext)
 
 
+def mime2ext(mimetype):
+    return {
+        'image/gif': '.gif',
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+    }.get(mimetype)
+
+
 def helper(f):
     @app.context_processor
     def processor():
@@ -437,7 +445,7 @@ def upload():
             flash('You cannot upload the file; '
                   'only JPEG / PNG / GIF is allowed', 'error')
             return redirect(url_for('upload'))
-        _, ext = os.path.splitext(upload_file.filename)
+        ext = mime2ext(upload_file.mimetype)
         filedata = upload_file.read()
         filename = sha256(filedata).hexdigest() + ext
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
