@@ -696,4 +696,9 @@ def initialize():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    from wsgi_lineprof.middleware import LineProfilerMiddleware
+    from wsgi_lineprof.filters import FilenameFilter
+    from wsgiref.simple_server import make_server
+    profile_app = LineProfilerMiddleware(app, filters=[FilenameFilter("main.py")])
+    with make_server('0.0.0.0', 5000, profile_app) as server:
+        server.serve_forever()
