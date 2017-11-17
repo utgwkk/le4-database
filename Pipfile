@@ -10,6 +10,7 @@ name = "pypi"
 flask = "*"
 python-dotenv = "*"
 "psycopg2" = "*"
+flask-compress = "*"
 
 
 [requires]

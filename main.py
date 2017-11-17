@@ -20,11 +20,14 @@ from flask import (
     session,
     url_for,
 )
+from flask_compress import Compress
 load_dotenv(find_dotenv())
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER')
 PERMITTED_MIMETYPES = {'image/jpeg', 'image/png', 'image/gif'}
+Compress(app)
+app.config['COMPRESS_MIMETYPES'] += list(PERMITTED_MIMETYPES)
 
 
 def connect_db():
