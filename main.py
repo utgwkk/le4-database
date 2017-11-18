@@ -172,41 +172,31 @@ def calculate_notification_count():
 
 
 @helper
-def calculate_4f_count(username):
+def calculate_count_info(user_id):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
         SELECT (
             SELECT COUNT(*) AS cnt
-            FROM relations r
-            INNER JOIN users u
-            ON r.follower_id = u.id
-            AND u.username = %s
+            FROM relations
+            WHERE follower_id = %s
         ) AS following_count,
         (
             SELECT COUNT(*) AS cnt
-            FROM relations r
-            INNER JOIN users u
-            ON r.following_id = u.id
-            AND u.username = %s
+            FROM relations
+            WHERE following_id = %s
         ) AS follower_count,
         (
             SELECT COUNT(*) AS cnt
             FROM favorites
-            WHERE user_id = (
-                SELECT id FROM users
-                WHERE username = %s
-            )
+            WHERE user_id = %s
         ) AS favorites_count,
         (
             SELECT COUNT(*) AS cnt
             FROM posts
-            WHERE user_id = (
-                SELECT id FROM users
-                WHERE username = %s
-            )
+            WHERE user_id = %s
         ) AS posts_count
-        ''', [username] * 4)
+        ''', [user_id] * 4)
     return c.fetchone()
 
 
