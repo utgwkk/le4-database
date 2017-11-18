@@ -1,0 +1,40 @@
+{% set ff_count = calculate_3f_count(username) %}
+<ul class="nav nav-tabs" id="profile_tab">
+  <li class="nav-item" data-name="user"><a href="{{ url_for('userpage', username=username) }}">Profile</a></li>
+  <li class="nav-item" data-name="following"><a href="{{ url_for('users_following', username=username) }}">Following<span class="badge">{{ ff_count['following_count'] }}</span></a></li>
+  <li class="nav-item" data-name="follower"><a href="{{ url_for('users_follower', username=username) }}">Follower<span class="badge">{{ ff_count['follower_count'] }}</span></a></li>
+  <li class="nav-item" data-name="favorites"><a href="{{ url_for('list_favorite', username=username) }}">Favorites<span class="badge">{{ ff_count['favorites_count'] }}</span></a></li>
+</ul>
+<div class="list-group">
+  <div class="list-group-item">
+    <h4 class="list-group-item-heading">Username</h4>
+    <div class="list-group-item-text">{{ username }}</div>
+  </div>
+  <div class="list-group-item">
+    <h4 class="list-group-item-heading">Description</h4>
+    <div class="list-group-item-text">{{ description or 'No description set.' }}</div>
+  </div>
+  {% if logged_in() %}
+    {% if session['user_id'] != user_id %}
+      {% if follows(session.get('user_id'), user_id) %}
+        <form action="{{ url_for('unfollow') }}" method="POST">
+          <button type="submit" class="btn btn-danger btn-lg btn-block">Unfollow @{{username}}</button>
+      {% else %}
+        <form action="{{ url_for('follow') }}" method="POST">
+          <button type="submit" class="btn btn-primary btn-lg btn-block">Follow @{{username}}</button>
+      {% endif %}
+        <input type="hidden" name="username" value="{{username}}">
+      </form>
+    {% endif %}
+  {% endif %}
+</div>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function() {
+  document.querySelectorAll("#profile_tab .nav-item").forEach(function (tab) {
+    const tabName = tab.dataset["name"];
+    if (tabName === "{{ current_page }}") {
+      tab.classList.add("active");
+    }
+  });
+});
+</script>

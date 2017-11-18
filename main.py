@@ -368,6 +368,11 @@ def users_following(username):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
+        SELECT id AS user_id, description FROM users
+        WHERE username = %s
+        ''', (username,))
+        user = c.fetchone()
+        c.execute('''
         SELECT u.* FROM relations r
         INNER JOIN users u
         ON u.id = r.following_id AND r.follower_id = (
@@ -377,7 +382,7 @@ def users_following(username):
         ORDER BY created_at DESC
         ''', (username,))
     return render_template('following.html', users=c.fetchall(),
-                           username=username)
+                           username=username, **user)
 
 
 @app.route('/follower')
@@ -392,6 +397,11 @@ def users_follower(username):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
+        SELECT id AS user_id, description FROM users
+        WHERE username = %s
+        ''', (username,))
+        user = c.fetchone()
+        c.execute('''
         SELECT u.* FROM relations r
         INNER JOIN users u
         ON u.id = r.follower_id AND r.following_id = (
@@ -401,7 +411,7 @@ def users_follower(username):
         ORDER BY created_at DESC
         ''', (username,))
     return render_template('follower.html', users=c.fetchall(),
-                           username=username)
+                           username=username, **user)
 
 
 @app.route('/follow', methods=['POST'])
@@ -657,6 +667,11 @@ def list_favorite(username):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
+        SELECT id AS user_id, description FROM users
+        WHERE username = %s
+        ''', (username,))
+        user = c.fetchone()
+        c.execute('''
         SELECT p.id, p.title, p.description, p.path, u.username, f.created_at,
         COUNT(f.user_id) AS favorites_count
         FROM favorites f
@@ -674,7 +689,8 @@ def list_favorite(username):
         ORDER BY f.created_at DESC
         ''', (username,))
     posts = c.fetchall()
-    return render_template('favorites.html', posts=posts, username=username)
+    return render_template('favorites.html', posts=posts, username=username,
+                           **user)
 
 
 @app.route('/favorite/<int:post_id>', methods=['POST'])
