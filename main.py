@@ -172,33 +172,31 @@ def calculate_notification_count():
 
 
 @helper
-def calculate_3f_count(username):
+def calculate_count_info(user_id):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
         SELECT (
             SELECT COUNT(*) AS cnt
-            FROM relations r
-            INNER JOIN users u
-            ON r.follower_id = u.id
-            AND u.username = %s
+            FROM relations
+            WHERE follower_id = %s
         ) AS following_count,
         (
             SELECT COUNT(*) AS cnt
-            FROM relations r
-            INNER JOIN users u
-            ON r.following_id = u.id
-            AND u.username = %s
+            FROM relations
+            WHERE following_id = %s
         ) AS follower_count,
         (
             SELECT COUNT(*) AS cnt
             FROM favorites
-            WHERE user_id = (
-                SELECT id FROM users
-                WHERE username = %s
-            )
-        ) AS favorites_count
-        ''', [username] * 3)
+            WHERE user_id = %s
+        ) AS favorites_count,
+        (
+            SELECT COUNT(*) AS cnt
+            FROM posts
+            WHERE user_id = %s
+        ) AS posts_count
+        ''', [user_id] * 4)
     return c.fetchone()
 
 
@@ -329,7 +327,11 @@ def register_user():
 def userpage(username):
     with db() as conn:
         c = conn.cursor()
-        c.execute('SELECT * FROM users WHERE username = %s', (username,))
+        c.execute('''
+        SELECT id AS user_id, username, description
+        FROM users
+        WHERE username = %s
+        ''', (username,))
         user = c.fetchone()
 
     if user is None:
@@ -346,10 +348,10 @@ def userpage(username):
             WHERE p.user_id = %s
             GROUP BY 1, 2, 3, 4
             ORDER BY p.created_at DESC
-        ''', (user['id'],))
+        ''', (user['user_id'],))
         posts = c.fetchall()
 
-    return render_template('user.html', user=user, posts=posts)
+    return render_template('user.html', **user, posts=posts)
 
 
 @app.route('/following')
@@ -364,6 +366,11 @@ def users_following(username):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
+        SELECT id AS user_id, description FROM users
+        WHERE username = %s
+        ''', (username,))
+        user = c.fetchone()
+        c.execute('''
         SELECT u.* FROM relations r
         INNER JOIN users u
         ON u.id = r.following_id AND r.follower_id = (
@@ -373,7 +380,7 @@ def users_following(username):
         ORDER BY created_at DESC
         ''', (username,))
     return render_template('following.html', users=c.fetchall(),
-                           username=username)
+                           username=username, **user)
 
 
 @app.route('/follower')
@@ -388,6 +395,11 @@ def users_follower(username):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
+        SELECT id AS user_id, description FROM users
+        WHERE username = %s
+        ''', (username,))
+        user = c.fetchone()
+        c.execute('''
         SELECT u.* FROM relations r
         INNER JOIN users u
         ON u.id = r.follower_id AND r.following_id = (
@@ -397,7 +409,7 @@ def users_follower(username):
         ORDER BY created_at DESC
         ''', (username,))
     return render_template('follower.html', users=c.fetchall(),
-                           username=username)
+                           username=username, **user)
 
 
 @app.route('/follow', methods=['POST'])
@@ -653,6 +665,11 @@ def list_favorite(username):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
+        SELECT id AS user_id, description FROM users
+        WHERE username = %s
+        ''', (username,))
+        user = c.fetchone()
+        c.execute('''
         SELECT p.id, p.title, p.description, p.path, u.username, f.created_at,
         COUNT(f.user_id) AS favorites_count
         FROM favorites f
@@ -670,7 +687,8 @@ def list_favorite(username):
         ORDER BY f.created_at DESC
         ''', (username,))
     posts = c.fetchall()
-    return render_template('favorites.html', posts=posts, username=username)
+    return render_template('favorites.html', posts=posts, username=username,
+                           **user)
 
 
 @app.route('/favorite/<int:post_id>', methods=['POST'])
