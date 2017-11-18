@@ -164,7 +164,7 @@ def calculate_notification_count():
         WHERE
         receiver_id = %s
         AND e.created_at > (
-            SELECT updated_at FROM event_haveread
+            SELECT since FROM event_haveread
             WHERE user_id = %s
         )
         ''', [session['user_id']] * 2)
@@ -726,7 +726,7 @@ def list_events():
         SELECT
         e.*, u.username,
         p.title, p.path,
-        (e.created_at > eh.updated_at)::int AS unread
+        (e.created_at > eh.since)::int AS unread
         FROM events e
         INNER JOIN event_haveread eh
         ON e.receiver_id = eh.user_id
@@ -741,7 +741,7 @@ def list_events():
         if len(events) > 0 and bool(events[0]['unread']):
             c.execute('''
             UPDATE event_haveread
-            SET updated_at = NOW() WHERE user_id = %s
+            SET since = NOW() WHERE user_id = %s
             ''', (session['user_id'],))
     return render_template('notifications.html', events=events)
 

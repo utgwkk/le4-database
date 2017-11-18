@@ -139,7 +139,7 @@ ALTER SEQUENCE comments_id_seq OWNED BY comments.id;
 
 CREATE TABLE event_haveread (
     user_id integer NOT NULL,
-    updated_at timestamp without time zone DEFAULT now()
+    since timestamp without time zone DEFAULT now()
 );
 
 
