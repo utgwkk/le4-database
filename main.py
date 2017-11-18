@@ -599,22 +599,6 @@ def image_from_uploads(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
-@app.route('/post/<int:id>/image')
-def image(id):
-    with db() as conn:
-        c = conn.cursor()
-        c.execute('''
-            SELECT path FROM posts
-            WHERE id = %s
-        ''', (id,))
-    row = c.fetchone()
-    if row is None:
-        abort(404)
-
-    path = row['path']
-    return redirect(url_for('image_from_uploads', filename=path))
-
-
 @app.route('/post/<int:post_id>/comment', methods=['POST'])
 @must_login
 def post_comment(post_id):
