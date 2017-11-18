@@ -98,14 +98,6 @@ def get_username_by_user_id(user_id):
     return c.fetchone()['username']
 
 
-def ext2mime(ext):
-    return {
-        '.gif': 'image/gif',
-        '.jpg': 'image/jpeg',
-        '.png': 'image/png',
-    }.get(ext)
-
-
 def mime2ext(mimetype):
     return {
         'image/gif': '.gif',
