@@ -329,7 +329,11 @@ def register_user():
 def userpage(username):
     with db() as conn:
         c = conn.cursor()
-        c.execute('SELECT * FROM users WHERE username = %s', (username,))
+        c.execute('''
+        SELECT id AS user_id, username, description
+        FROM users
+        WHERE username = %s
+        ''', (username,))
         user = c.fetchone()
 
     if user is None:
@@ -346,10 +350,10 @@ def userpage(username):
             WHERE p.user_id = %s
             GROUP BY 1, 2, 3, 4
             ORDER BY p.created_at DESC
-        ''', (user['id'],))
+        ''', (user['user_id'],))
         posts = c.fetchall()
 
-    return render_template('user.html', user=user, posts=posts)
+    return render_template('user.html', **user, posts=posts)
 
 
 @app.route('/following')
