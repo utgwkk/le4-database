@@ -1,5 +1,9 @@
 <li class="list-group-item">
-  <h4 class="list-group-item-heading"><a href="{{ url_for('show_post', id=post['id']) }}">{{ post['title'] }}</a></h4>
+  <h4 class="list-group-item-heading"><a href="{{ url_for('show_post', id=post['id']) }}">{{ post['title'] }}</a>
+    {% if post['favorites_count'] > 0 %}
+    (❤️ by {{ post['favorites_count'] }} users)
+    {% endif %}
+  </h4>
   <p class="list-group-item-text" style="display: inline-flex;">
     <span class="thumbnail" style="background-image: url('{{ url_for('image_from_uploads', filename=post['path']) }}')"></span>
     <span>
