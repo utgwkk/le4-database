@@ -172,7 +172,7 @@ def calculate_notification_count():
 
 
 @helper
-def calculate_3f_count(username):
+def calculate_4f_count(username):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
@@ -197,8 +197,16 @@ def calculate_3f_count(username):
                 SELECT id FROM users
                 WHERE username = %s
             )
-        ) AS favorites_count
-        ''', [username] * 3)
+        ) AS favorites_count,
+        (
+            SELECT COUNT(*) AS cnt
+            FROM posts
+            WHERE user_id = (
+                SELECT id FROM users
+                WHERE username = %s
+            )
+        ) AS posts_count
+        ''', [username] * 4)
     return c.fetchone()
 
 

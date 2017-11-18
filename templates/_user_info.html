@@ -1,9 +1,13 @@
-{% set ff_count = calculate_3f_count(username) %}
+{% set ff_count = calculate_4f_count(username) %}
 <ul class="nav nav-tabs" id="profile_tab">
-  <li class="nav-item" data-name="user"><a href="{{ url_for('userpage', username=username) }}">Profile</a></li>
-  <li class="nav-item" data-name="following"><a href="{{ url_for('users_following', username=username) }}">Following<span class="badge">{{ ff_count['following_count'] }}</span></a></li>
-  <li class="nav-item" data-name="follower"><a href="{{ url_for('users_follower', username=username) }}">Follower<span class="badge">{{ ff_count['follower_count'] }}</span></a></li>
-  <li class="nav-item" data-name="favorites"><a href="{{ url_for('list_favorite', username=username) }}">Favorites<span class="badge">{{ ff_count['favorites_count'] }}</span></a></li>
+  <li class="nav-item" data-name="user"><a href="{{ url_for('userpage', username=username) }}">Posts
+    <span class="badge">{{ ff_count['posts_count'] }}</span></a></li>
+  <li class="nav-item" data-name="following"><a href="{{ url_for('users_following', username=username) }}">Following
+    <span class="badge">{{ ff_count['following_count'] }}</span></a></li>
+  <li class="nav-item" data-name="follower"><a href="{{ url_for('users_follower', username=username) }}">Follower
+    <span class="badge">{{ ff_count['follower_count'] }}</span></a></li>
+  <li class="nav-item" data-name="favorites"><a href="{{ url_for('list_favorite', username=username) }}">Favorites
+    <span class="badge">{{ ff_count['favorites_count'] }}</span></a></li>
 </ul>
 <div class="list-group">
   <div class="list-group-item">
