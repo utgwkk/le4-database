@@ -743,7 +743,7 @@ def list_events():
             UPDATE event_haveread
             SET since = NOW() WHERE user_id = %s
             ''', (session['user_id'],))
-    return render_template('notifications.html', events=events)
+    return render_template('events.html', events=events)
 
 
 def initialize():
