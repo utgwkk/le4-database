@@ -1,5 +1,8 @@
 {% extends "layout.html" %}
 {% block body %}
+{% if query %}
+  <h2>Search result for {{ query }}</h2>
+{% endif %}
 <ul class="list-group">
   {% for post in posts %}
     {% include "_post.html" %}

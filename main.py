@@ -544,6 +544,9 @@ def list_posts():
 @app.route('/posts/search')
 def search_posts():
     query = request.args.get('query', '')
+    if not query:
+        return redirect(url_for('list_posts'))
+
     with db() as conn:
         c = conn.cursor()
         c.execute('''
