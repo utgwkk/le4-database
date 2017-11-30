@@ -208,15 +208,9 @@ def index():
     with db() as conn:
         c = conn.cursor()
         c.execute('''
-            SELECT p.id, p.title, p.description, p.path, u.username,
-            COUNT(f.post_id) AS favorites_count
-            FROM posts p
-            LEFT JOIN users u
-            ON p.user_id = u.id
-            LEFT JOIN favorites f
-            ON p.id = f.post_id
-            GROUP BY 1, 2, 3, 4, 5
-            ORDER BY p.id DESC LIMIT 8
+            SELECT *
+            FROM posts_with_full_info
+            ORDER BY id DESC LIMIT 8
         ''')
     posts = c.fetchall()
 
@@ -224,19 +218,13 @@ def index():
         with db() as conn:
             c = conn.cursor()
             c.execute('''
-                SELECT p.id, p.title, p.description, p.path, u.username,
-                COUNT(f.post_id) AS favorites_count
-                FROM posts p
-                LEFT JOIN users u
-                ON p.user_id = u.id
-                LEFT JOIN favorites f
-                ON p.id = f.post_id
-                WHERE p.user_id IN (
+                SELECT *
+                FROM posts_with_full_info
+                WHERE user_id IN (
                     SELECT following_id FROM relations
                     WHERE follower_id = %s
                 )
-                GROUP BY 1, 2, 3, 4, 5
-                ORDER BY p.id DESC LIMIT 8
+                ORDER BY id DESC LIMIT 8
             ''', (session['user_id'],))
         posts_following = c.fetchall()
     else:
@@ -333,13 +321,10 @@ def userpage(username):
     with db() as conn:
         c = conn.cursor()
         c.execute('''
-            SELECT p.id, title, description, path, COUNT(f.user_id) AS favorites_count
-            FROM posts p
-            LEFT JOIN favorites f
-            ON p.id = f.post_id
-            WHERE p.user_id = %s
-            GROUP BY 1, 2, 3, 4
-            ORDER BY p.created_at DESC
+            SELECT *
+            FROM posts_with_full_info
+            WHERE user_id = %s
+            ORDER BY id DESC
         ''', (user['user_id'],))
         posts = c.fetchall()
 
@@ -527,15 +512,9 @@ def list_posts():
     with db() as conn:
         c = conn.cursor()
         c.execute('''
-            SELECT p.id, p.title, p.description, p.path, u.username,
-            COUNT(f.user_id) AS favorites_count
-            FROM posts p
-            LEFT JOIN users u
-            ON p.user_id = u.id
-            LEFT JOIN favorites f
-            ON p.id = f.post_id
-            GROUP BY 1, 2, 3, 4, 5
-            ORDER BY p.id DESC
+            SELECT *
+            FROM posts_with_full_info
+            ORDER BY id DESC
         ''')
     posts = c.fetchall()
     return render_template('posts.html', posts=posts)
@@ -550,17 +529,11 @@ def search_posts():
     with db() as conn:
         c = conn.cursor()
         c.execute('''
-            SELECT p.id, p.title, p.description, p.path, u.username,
-            COUNT(f.user_id) AS favorites_count
-            FROM posts p
-            LEFT JOIN users u
-            ON p.user_id = u.id
-            LEFT JOIN favorites f
-            ON p.id = f.post_id
-            WHERE p.title LIKE likequery(%s)
-            OR p.description LIKE likequery(%s)
-            GROUP BY 1, 2, 3, 4, 5
-            ORDER BY p.id DESC
+            SELECT *
+            FROM posts_with_full_info
+            WHERE title LIKE likequery(%s)
+            OR description LIKE likequery(%s)
+            ORDER BY id DESC
         ''', [query] * 2)
     posts = c.fetchall()
     return render_template('posts.html', posts=posts, query=query)
@@ -671,20 +644,14 @@ def list_favorite(username):
         ''', (username,))
         user = c.fetchone()
         c.execute('''
-        SELECT p.id, p.title, p.description, p.path, u.username, f.created_at,
-        COUNT(f.user_id) AS favorites_count
-        FROM favorites f
-        INNER JOIN posts p
+        SELECT p.*, f.created_at
+        FROM posts_with_full_info p
+        INNER JOIN favorites f
         ON f.user_id = (
             SELECT id FROM users
             WHERE username = %s
         )
         AND f.post_id = p.id
-        INNER JOIN users u
-        ON p.user_id = u.id
-        LEFT JOIN favorites f2
-        ON p.id = f2.post_id
-        GROUP BY 1, 2, 3, 4, 5, 6
         ORDER BY f.created_at DESC
         ''', (username,))
     posts = c.fetchall()
