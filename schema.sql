@@ -26,6 +26,8 @@ ALTER TABLE ONLY public.events DROP CONSTRAINT events_invoker_id_fkey;
 ALTER TABLE ONLY public.event_haveread DROP CONSTRAINT event_haveread_user_id_fkey;
 ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_user_id_fkey;
 ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_post_id_fkey;
+DROP INDEX public.posts_title;
+DROP INDEX public.posts_description;
 DROP INDEX public.events_receiver_id;
 DROP INDEX public.created_at;
 DROP INDEX public.comments_post_id;
@@ -53,6 +55,7 @@ DROP TABLE public.event_haveread;
 DROP SEQUENCE public.comments_id_seq;
 DROP TABLE public.comments;
 DROP TYPE public.event_type;
+DROP EXTENSION pg_bigm;
 DROP EXTENSION plpgsql;
 DROP SCHEMA public;
 --
@@ -81,6 +84,20 @@ CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 --
 
 COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
+
+
+--
+-- Name: pg_bigm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_bigm WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_bigm; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_bigm IS 'text similarity measurement and index searching based on bigrams';
 
 
 SET search_path = public, pg_catalog;
@@ -383,6 +400,20 @@ CREATE INDEX created_at ON favorites USING btree (created_at);
 --
 
 CREATE INDEX events_receiver_id ON events USING btree (receiver_id);
+
+
+--
+-- Name: posts_description; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX posts_description ON posts USING gin (description gin_bigm_ops);
+
+
+--
+-- Name: posts_title; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX posts_title ON posts USING gin (title gin_bigm_ops);
 
 
 --

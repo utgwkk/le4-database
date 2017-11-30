@@ -541,6 +541,28 @@ def list_posts():
     return render_template('posts.html', posts=posts)
 
 
+@app.route('/posts/search')
+def search_posts():
+    query = request.args.get('query', '')
+    with db() as conn:
+        c = conn.cursor()
+        c.execute('''
+            SELECT p.id, p.title, p.description, p.path, u.username,
+            COUNT(f.user_id) AS favorites_count
+            FROM posts p
+            LEFT JOIN users u
+            ON p.user_id = u.id
+            LEFT JOIN favorites f
+            ON p.id = f.post_id
+            WHERE p.title LIKE likequery(%s)
+            OR p.description LIKE likequery(%s)
+            GROUP BY 1, 2, 3, 4, 5
+            ORDER BY p.id DESC
+        ''', [query] * 2)
+    posts = c.fetchall()
+    return render_template('posts.html', posts=posts, query=query)
+
+
 @app.route('/post/<int:id>')
 def show_post(id):
     with db() as conn:
