@@ -26,6 +26,15 @@ ALTER TABLE ONLY public.events DROP CONSTRAINT events_invoker_id_fkey;
 ALTER TABLE ONLY public.event_haveread DROP CONSTRAINT event_haveread_user_id_fkey;
 ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_user_id_fkey;
 ALTER TABLE ONLY public.comments DROP CONSTRAINT comments_post_id_fkey;
+CREATE OR REPLACE VIEW public.posts_with_full_info AS
+SELECT
+    NULL::integer AS id,
+    NULL::integer AS user_id,
+    NULL::text AS title,
+    NULL::text AS description,
+    NULL::text AS path,
+    NULL::character varying(32) AS username,
+    NULL::bigint AS favorites_count;
 DROP INDEX public.posts_title;
 DROP INDEX public.posts_description;
 DROP INDEX public.events_receiver_id;
@@ -46,6 +55,7 @@ ALTER TABLE public.comments ALTER COLUMN id DROP DEFAULT;
 DROP SEQUENCE public.users_id_seq;
 DROP TABLE public.users;
 DROP TABLE public.relations;
+DROP VIEW public.posts_with_full_info;
 DROP SEQUENCE public.posts_id_seq;
 DROP TABLE public.posts;
 DROP TABLE public.favorites;
@@ -241,6 +251,21 @@ ALTER SEQUENCE posts_id_seq OWNED BY posts.id;
 
 
 --
+-- Name: posts_with_full_info; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW posts_with_full_info AS
+SELECT
+    NULL::integer AS id,
+    NULL::integer AS user_id,
+    NULL::text AS title,
+    NULL::text AS description,
+    NULL::text AS path,
+    NULL::character varying(32) AS username,
+    NULL::bigint AS favorites_count;
+
+
+--
 -- Name: relations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -414,6 +439,25 @@ CREATE INDEX posts_description ON posts USING gin (description gin_bigm_ops);
 --
 
 CREATE INDEX posts_title ON posts USING gin (title gin_bigm_ops);
+
+
+--
+-- Name: posts_with_full_info _RETURN; Type: RULE; Schema: public; Owner: -
+--
+
+CREATE OR REPLACE VIEW posts_with_full_info AS
+ SELECT p.id,
+    p.user_id,
+    p.title,
+    p.description,
+    p.path,
+    u.username,
+    count(f.user_id) AS favorites_count
+   FROM ((posts p
+     JOIN users u ON ((p.user_id = u.id)))
+     LEFT JOIN favorites f ON ((p.id = f.post_id)))
+  GROUP BY p.id, u.username
+  ORDER BY p.id DESC;
 
 
 --
