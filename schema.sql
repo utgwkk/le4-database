@@ -289,8 +289,7 @@ CREATE TABLE users (
     description text DEFAULT ''::text NOT NULL,
     created_at timestamp without time zone DEFAULT now(),
     updated_at timestamp without time zone DEFAULT now(),
-    CONSTRAINT username_length CHECK (((character_length((username)::text) >= 4) AND (character_length((username)::text) < 32))),
-    CONSTRAINT username_pattern CHECK (((username)::text ~ similar_escape('[a-z][0-9a-z_]{4,30}'::text, NULL::text)))
+    CONSTRAINT username_pattern CHECK (((username)::text ~ '[a-zA-Z_][0-9a-zA-Z_]{3,31}'::text))
 );
 
 
