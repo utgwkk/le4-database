@@ -68,3 +68,17 @@ class PostTest(AppTestCase):
         res = self.client.get('/@alice', follow_redirects=True)
         self.assertIn(b'hoge', res.data)
         self.assertIn(b'fuga', res.data)
+
+    def test_can_search_post(self):
+        self.register('alice', 'alicealice')
+        with open('./test/data/kids_chuunibyou_girl.png', 'rb') as f:
+            self.upload(f, 'hoge', 'fuga')
+        with open('./test/data/kids_chuunibyou_girl.png', 'rb') as f:
+            self.upload(f, 'aho', 'expected1')
+        with open('./test/data/kids_chuunibyou_girl.png', 'rb') as f:
+            self.upload(f, 'expected2', 'ahoho')
+        self.logout()
+
+        res = self.client.get('/posts/search?query=aho')
+        self.assertIn(b'expected1', res.data)
+        self.assertIn(b'expected2', res.data)
