@@ -724,7 +724,7 @@ def list_events():
         ORDER BY id DESC
         ''', (session['user_id'],))
         events = c.fetchall()
-        if len(events) > 0 and bool(events[0]['unread']):
+        if events and bool(events[0]['unread']):
             c.execute('''
             UPDATE event_haveread
             SET since = NOW() WHERE user_id = %s
