@@ -49,7 +49,7 @@
 </div>
 {% if logged_in() %}
   {% if user_id == current_user()['id'] %}
-    <form action="{{ url_for('delete_post', id=id)}}" method="POST" id="delete-post">
+    <form action="{{ url_for('delete_post', post_id=id)}}" method="POST" id="delete-post">
       <button type="submit" class="btn btn-danger btn-lg btn-block">Delete this post</button>
     </form>
   {% endif %}

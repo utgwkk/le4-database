@@ -1,15 +1,14 @@
 import os
 import random
 import glob
+from functools import wraps
+from hashlib import sha256
 import psycopg2
 import psycopg2.extras
 import psycopg2.errorcodes
-from functools import wraps
-from hashlib import sha256
 from dotenv import load_dotenv, find_dotenv
 from flask import (
     Flask,
-    Response,
     abort,
     flash,
     g,
@@ -64,6 +63,7 @@ def passhash(password, salt):
 class ValidationError(Exception):
     def __init__(self, message):
         self.message = message
+        super(ValidationError, self).__init__(message)
 
 
 def validate_user_params(username, password):
@@ -77,25 +77,25 @@ def validate_user_params(username, password):
 
 def authenticate(username, password):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('SELECT password, salt FROM users WHERE username = %s',
-                  (username,))
-    row = c.fetchone()
+        cursor = conn.cursor()
+        cursor.execute('SELECT password, salt FROM users WHERE username = %s',
+                       (username,))
+    row = cursor.fetchone()
     return row and passhash(password, row['salt']) == row['password']
 
 
 def get_user_id_by_username(username):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('SELECT id FROM users WHERE username = %s', (username,))
-    return c.fetchone()['id']
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM users WHERE username = %s', (username,))
+    return cursor.fetchone()['id']
 
 
 def get_username_by_user_id(user_id):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('SELECT username FROM users WHERE id = %s', (user_id,))
-    return c.fetchone()['username']
+        cursor = conn.cursor()
+        cursor.execute('SELECT username FROM users WHERE id = %s', (user_id,))
+    return cursor.fetchone()['username']
 
 
 def mime2ext(mimetype):
@@ -106,11 +106,11 @@ def mime2ext(mimetype):
     }.get(mimetype)
 
 
-def helper(f):
+def helper(func):
     @app.context_processor
     def processor():
-        return {f.__name__: f}
-    return f
+        return {func.__name__: func}
+    return func
 
 
 @helper
@@ -121,36 +121,38 @@ def logged_in():
 @helper
 def current_user():
     with db() as conn:
-        c = conn.cursor()
-        c.execute('SELECT * FROM users WHERE id = %s', (session.get('user_id'),))
-    return c.fetchone()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE id = %s', (session.get('user_id'),))
+    return cursor.fetchone()
 
 
 @helper
 def follows(follower_id, following_id):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('SELECT 1 FROM relations '
-                  'WHERE follower_id = %s AND following_id = %s',
-                  (follower_id, following_id))
-    return c.fetchone() is not None
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT 1 FROM relations
+            WHERE follower_id = %s AND following_id = %s
+        ''', (follower_id, following_id))
+    return cursor.fetchone() is not None
 
 
 @helper
 def favorites(user_id, post_id):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('SELECT 1 FROM favorites '
-                  'WHERE user_id = %s AND post_id = %s',
-                  (user_id, post_id))
-    return c.fetchone() is not None
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT 1 FROM favorites
+            WHERE user_id = %s AND post_id = %s
+        ''', (user_id, post_id))
+    return cursor.fetchone() is not None
 
 
 @helper
 def calculate_notification_count():
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
         SELECT COUNT(*) AS cnt
         FROM events e
         WHERE
@@ -160,14 +162,14 @@ def calculate_notification_count():
             WHERE user_id = %s
         )
         ''', [session['user_id']] * 2)
-    return c.fetchone()['cnt'] or 0
+    return cursor.fetchone()['cnt'] or 0
 
 
 @helper
 def calculate_count_info(user_id):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
         SELECT (
             SELECT COUNT(*) AS cnt
             FROM relations
@@ -189,35 +191,35 @@ def calculate_count_info(user_id):
             WHERE user_id = %s
         ) AS posts_count
         ''', [user_id] * 4)
-    return c.fetchone()
+    return cursor.fetchone()
 
 
-def must_login(f):
-    @wraps(f)
+def must_login(func):
+    @wraps(func)
     def _inner(*args, **kwargs):
         if not logged_in():
             flash('You are not logged in', 'info')
             return redirect(url_for('login'))
         else:
-            return f(*args, **kwargs)
+            return func(*args, **kwargs)
     return _inner
 
 
 @app.route('/')
 def index():
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
             SELECT *
             FROM posts_with_full_info
             ORDER BY id DESC LIMIT 8
         ''')
-    posts = c.fetchall()
+    posts = cursor.fetchall()
 
     if logged_in():
         with db() as conn:
-            c = conn.cursor()
-            c.execute('''
+            cursor = conn.cursor()
+            cursor.execute('''
                 SELECT *
                 FROM posts_with_full_info
                 WHERE user_id IN (
@@ -226,7 +228,7 @@ def index():
                 )
                 ORDER BY id DESC LIMIT 8
             ''', (session['user_id'],))
-        posts_following = c.fetchall()
+        posts_following = cursor.fetchall()
     else:
         posts_following = []
     return render_template(
@@ -267,33 +269,33 @@ def register_user():
         password = request.form.get('password', '')
         try:
             validate_user_params(username, password)
-        except ValidationError as e:
-            flash(e.message, 'error')
+        except ValidationError as err:
+            flash(err.message, 'error')
             return redirect(url_for('register_user'))
         alphabets = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         salt = ''.join([random.choice(alphabets) for _ in range(32)])
         with db() as conn:
-            c = conn.cursor()
+            cursor = conn.cursor()
             try:
-                c.execute(
+                cursor.execute(
                     'INSERT INTO users '
                     '(username, salt, password) '
                     'VALUES (%s, %s, %s) RETURNING id',
                     (username, salt, passhash(password, salt),)
                 )
-                lastrowid = c.fetchone()[0]
-                c.execute('''
+                lastrowid = cursor.fetchone()[0]
+                cursor.execute('''
                     INSERT INTO event_haveread
                     (user_id) VALUES (LASTVAL())
                 ''')
-            except psycopg2.Error as e:
-                if e.pgcode == psycopg2.errorcodes.UNIQUE_VIOLATION:
+            except psycopg2.Error as err:
+                if err.pgcode == psycopg2.errorcodes.UNIQUE_VIOLATION:
                     flash(
                         f'The username @{username} has already taken', 'error'
                     )
                 else:
                     flash(
-                        f'Unknown error: {e.pgerror}', 'error'
+                        f'Unknown error: {err.pgerror}', 'error'
                     )
                 return redirect(url_for('register_user'))
         session['user_id'] = lastrowid
@@ -306,27 +308,27 @@ def register_user():
 @app.route('/@<string:username>')
 def userpage(username):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
         SELECT id AS user_id, username, description
         FROM users
         WHERE username = %s
         ''', (username,))
-        user = c.fetchone()
+        user = cursor.fetchone()
 
     if user is None:
         abort(404)
 
     # Fetch user's post
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
             SELECT *
             FROM posts_with_full_info
             WHERE user_id = %s
             ORDER BY id DESC
         ''', (user['user_id'],))
-        posts = c.fetchall()
+        posts = cursor.fetchall()
 
     return render_template('user.html', **user, posts=posts)
 
@@ -341,13 +343,13 @@ def following():
 @app.route('/@<string:username>/following')
 def users_following(username):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
         SELECT id AS user_id, description FROM users
         WHERE username = %s
         ''', (username,))
-        user = c.fetchone()
-        c.execute('''
+        user = cursor.fetchone()
+        cursor.execute('''
         SELECT u.* FROM relations r
         INNER JOIN users u
         ON u.id = r.following_id AND r.follower_id = (
@@ -356,7 +358,7 @@ def users_following(username):
         )
         ORDER BY created_at DESC
         ''', (username,))
-    return render_template('following.html', users=c.fetchall(),
+    return render_template('following.html', users=cursor.fetchall(),
                            username=username, **user)
 
 
@@ -370,13 +372,13 @@ def follower():
 @app.route('/@<string:username>/follower')
 def users_follower(username):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
         SELECT id AS user_id, description FROM users
         WHERE username = %s
         ''', (username,))
-        user = c.fetchone()
-        c.execute('''
+        user = cursor.fetchone()
+        cursor.execute('''
         SELECT u.* FROM relations r
         INNER JOIN users u
         ON u.id = r.follower_id AND r.following_id = (
@@ -385,7 +387,7 @@ def users_follower(username):
         )
         ORDER BY created_at DESC
         ''', (username,))
-    return render_template('follower.html', users=c.fetchall(),
+    return render_template('follower.html', users=cursor.fetchall(),
                            username=username, **user)
 
 
@@ -394,13 +396,13 @@ def users_follower(username):
 def follow():
     username = request.form.get('username', '')
     with db() as conn:
-        c = conn.cursor()
+        cursor = conn.cursor()
         try:
-            c.execute('''
+            cursor.execute('''
             INSERT INTO relations (follower_id, following_id)
             VALUES (%s, (SELECT id FROM users WHERE username = %s))
             ''', (session['user_id'], username))
-            c.execute('''
+            cursor.execute('''
             INSERT INTO events
             (receiver_id, type, source_id, invoker_id)
             SELECT
@@ -411,11 +413,11 @@ def follow():
             FROM users
             WHERE username = %s
             ''', (session['user_id'], session['user_id'], username))
-        except psycopg2.Error as e:
-            if e.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
+        except psycopg2.Error as err:
+            if err.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
                 abort(400)
             else:
-                raise e
+                raise err
     flash('Follow successful', 'info')
     return redirect(url_for('userpage', username=username))
 
@@ -425,13 +427,13 @@ def follow():
 def unfollow():
     username = request.form.get('username', '')
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
         DELETE FROM relations
         WHERE follower_id = %s AND
         following_id = (SELECT id FROM users WHERE username = %s)
         ''', (session['user_id'], username))
-        c.execute('''
+        cursor.execute('''
         DELETE FROM events
         WHERE type = 'follow' AND
         receiver_id = (SELECT id FROM users WHERE username = %s)
@@ -454,10 +456,12 @@ def setting():
     if request.method == 'POST':
         description = request.form['description']
         with db() as conn:
-            c = conn.cursor()
-            c.execute('UPDATE users SET description = %s, updated_at = NOW() '
-                      'WHERE id = %s',
-                      (description, session['user_id'],))
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE users SET
+                description = %s, updated_at = NOW()
+                WHERE id = %s
+            ''', (description, session['user_id'],))
         flash('Settings changed', 'info')
         return redirect(url_for('setting'))
     else:
@@ -485,12 +489,13 @@ def upload():
         filename = sha256(filedata).hexdigest() + ext
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         with db() as conn:
-            c = conn.cursor()
-            c.execute('INSERT INTO posts (user_id, title, description, path) '
-                      'VALUES (%s, %s, %s, %s) RETURNING id',
-                      (session['user_id'], title, description, filename))
-            new_post_id = c.fetchone()[0]
-            c.execute('''
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO posts (user_id, title, description, path)
+                 VALUES (%s, %s, %s, %s) RETURNING id
+            ''', (session['user_id'], title, description, filename))
+            new_post_id = cursor.fetchone()[0]
+            cursor.execute('''
             INSERT INTO events (receiver_id, type, source_id, invoker_id)
             SELECT
                 follower_id AS receiver_id,
@@ -500,9 +505,9 @@ def upload():
             FROM relations
             WHERE following_id = %s
             ''', (new_post_id, session['user_id'], session['user_id']))
-            with open(filepath, 'wb') as f:
-                f.write(filedata)
-        return redirect(url_for('show_post', id=new_post_id))
+            with open(filepath, 'wb') as fin:
+                fin.write(filedata)
+        return redirect(url_for('show_post', post_id=new_post_id))
     else:
         return render_template('upload.html')
 
@@ -510,13 +515,13 @@ def upload():
 @app.route('/posts')
 def list_posts():
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
             SELECT *
             FROM posts_with_full_info
             ORDER BY id DESC
         ''')
-    posts = c.fetchall()
+    posts = cursor.fetchall()
     return render_template('posts.html', posts=posts)
 
 
@@ -527,66 +532,66 @@ def search_posts():
         return redirect(url_for('list_posts'))
 
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
             SELECT *
             FROM posts_with_full_info
             WHERE title LIKE likequery(%s)
             OR description LIKE likequery(%s)
             ORDER BY id DESC
         ''', [query] * 2)
-    posts = c.fetchall()
+    posts = cursor.fetchall()
     return render_template('posts.html', posts=posts, query=query)
 
 
-@app.route('/post/<int:id>')
-def show_post(id):
+@app.route('/post/<int:post_id>')
+def show_post(post_id):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
             SELECT p.id, p.title, p.description, p.path, p.user_id, u.username
             FROM posts p
             INNER JOIN users u
             ON p.user_id = u.id
             WHERE p.id = %s
-        ''', (id,))
-        row = c.fetchone()
+        ''', (post_id,))
+        row = cursor.fetchone()
         if row is None:
             abort(404)
 
         data = dict(row)
-        c.execute(
+        cursor.execute(
             'SELECT COUNT(*) AS cnt FROM favorites WHERE post_id = %s',
-            (id,)
+            (post_id,)
         )
-        data['favorites_count'] = c.fetchone()['cnt']
-        c.execute('''
+        data['favorites_count'] = cursor.fetchone()['cnt']
+        cursor.execute('''
             SELECT c.content, c.created_at, u.username
             FROM comments c
             INNER JOIN users u
             ON c.user_id = u.id
             WHERE c.post_id = %s
             ORDER BY c.created_at DESC
-        ''', (id,))
-        data['comments'] = c.fetchall()
+        ''', (post_id,))
+        data['comments'] = cursor.fetchall()
     return render_template('post.html', **data)
 
 
-@app.route('/post/<int:id>/delete', methods=['POST'])
+@app.route('/post/<int:post_id>/delete', methods=['POST'])
 @must_login
-def delete_post(id):
+def delete_post(post_id):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('SELECT user_id FROM posts WHERE id = %s', (id,))
-        post_user_id = c.fetchone()['user_id']
+        cursor = conn.cursor()
+        cursor.execute('SELECT user_id FROM posts WHERE id = %s', (post_id,))
+        post_user_id = cursor.fetchone()['user_id']
         if session['user_id'] != post_user_id:
             abort(403)
 
-        c.execute('DELETE FROM posts WHERE id = %s', (id,))
-        c.execute('''
+        cursor.execute('DELETE FROM posts WHERE id = %s', (post_id,))
+        cursor.execute('''
         DELETE FROM events
         WHERE type = 'post' AND source_id = %s
-        ''', (id,))
+        ''', (post_id,))
 
     flash('Delete successful', 'info')
     return redirect(url_for('index'))
@@ -602,14 +607,14 @@ def image_from_uploads(filename):
 def post_comment(post_id):
     content = request.form['content']
     with db() as conn:
-        c = conn.cursor()
+        cursor = conn.cursor()
         try:
-            c.execute('''
+            cursor.execute('''
             INSERT INTO comments
             (post_id, user_id, content) VALUES
             (%s, %s, %s)
             ''', (post_id, session['user_id'], content))
-            c.execute('''
+            cursor.execute('''
             INSERT INTO events (receiver_id, type, source_id, invoker_id)
             SELECT
                 user_id AS receiver_id,
@@ -619,12 +624,12 @@ def post_comment(post_id):
             FROM posts
             WHERE id = %s
             ''', (session['user_id'], post_id))
-        except psycopg2.Error as e:
-            if e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
+        except psycopg2.Error as err:
+            if err.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
                 abort(400)
             else:
-                raise e
-    return redirect(url_for('show_post', id=post_id))
+                raise err
+    return redirect(url_for('show_post', post_id=post_id))
 
 
 @app.route('/favorites')
@@ -637,13 +642,13 @@ def list_my_favorite():
 @app.route('/@<string:username>/favorites')
 def list_favorite(username):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
         SELECT id AS user_id, description FROM users
         WHERE username = %s
         ''', (username,))
-        user = c.fetchone()
-        c.execute('''
+        user = cursor.fetchone()
+        cursor.execute('''
         SELECT p.*, f.created_at
         FROM posts_with_full_info p
         INNER JOIN favorites f
@@ -654,7 +659,7 @@ def list_favorite(username):
         AND f.post_id = p.id
         ORDER BY f.created_at DESC
         ''', (username,))
-    posts = c.fetchall()
+    posts = cursor.fetchall()
     return render_template('favorites.html', posts=posts, username=username,
                            **user)
 
@@ -663,13 +668,13 @@ def list_favorite(username):
 @must_login
 def create_favorite(post_id):
     with db() as conn:
-        c = conn.cursor()
+        cursor = conn.cursor()
         try:
-            c.execute('''
+            cursor.execute('''
             INSERT INTO favorites (user_id, post_id)
             VALUES (%s, %s)
             ''', (session['user_id'], post_id,))
-            c.execute('''
+            cursor.execute('''
             INSERT INTO events (receiver_id, type, source_id, invoker_id)
             SELECT
                 user_id AS receiver_id,
@@ -679,36 +684,36 @@ def create_favorite(post_id):
             FROM posts
             WHERE id = %s
             ''', (session['user_id'], post_id))
-        except psycopg2.Error as e:
-            if e.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
+        except psycopg2.Error as err:
+            if err.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
                 abort(400)
             else:
-                raise e
-    return redirect(url_for('show_post', id=post_id))
+                raise err
+    return redirect(url_for('show_post', post_id=post_id))
 
 
 @app.route('/unfavorite/<int:post_id>', methods=['POST'])
 @must_login
 def delete_favorite(post_id):
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
         DELETE FROM favorites
         WHERE user_id = %s AND post_id = %s
         ''', (session['user_id'], post_id,))
-        c.execute('''
+        cursor.execute('''
         DELETE FROM events
         WHERE invoker_id = %s AND source_id = %s AND type = 'favorite'
         ''', (session['user_id'], post_id))
-    return redirect(url_for('show_post', id=post_id))
+    return redirect(url_for('show_post', post_id=post_id))
 
 
 @app.route('/events')
 @must_login
 def list_events():
     with db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
         SELECT
         e.*, u.username,
         p.title, p.path,
@@ -723,9 +728,9 @@ def list_events():
         WHERE receiver_id = %s
         ORDER BY id DESC
         ''', (session['user_id'],))
-        events = c.fetchall()
-        if len(events) > 0 and bool(events[0]['unread']):
-            c.execute('''
+        events = cursor.fetchall()
+        if events and bool(events[0]['unread']):
+            cursor.execute('''
             UPDATE event_haveread
             SET since = NOW() WHERE user_id = %s
             ''', (session['user_id'],))
@@ -734,8 +739,8 @@ def list_events():
 
 def initialize():
     with connect_db() as conn:
-        c = conn.cursor()
-        c.execute('''
+        cursor = conn.cursor()
+        cursor.execute('''
         TRUNCATE
         relations, comments, favorites, posts, users, events, event_haveread
         RESTART IDENTITY CASCADE
