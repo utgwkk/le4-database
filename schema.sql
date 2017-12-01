@@ -21,6 +21,7 @@ ALTER TABLE ONLY public.relations DROP CONSTRAINT relations_follower_id_fkey;
 ALTER TABLE ONLY public.posts DROP CONSTRAINT posts_user_id_fkey;
 ALTER TABLE ONLY public.favorites DROP CONSTRAINT favorites_user_id_fkey;
 ALTER TABLE ONLY public.favorites DROP CONSTRAINT favorites_post_id_fkey;
+ALTER TABLE ONLY public.events DROP CONSTRAINT events_source_id_fkey;
 ALTER TABLE ONLY public.events DROP CONSTRAINT events_receiver_id_fkey;
 ALTER TABLE ONLY public.events DROP CONSTRAINT events_invoker_id_fkey;
 ALTER TABLE ONLY public.event_haveread DROP CONSTRAINT event_haveread_user_id_fkey;
@@ -180,7 +181,7 @@ CREATE TABLE events (
     receiver_id integer,
     created_at timestamp without time zone DEFAULT now(),
     type event_type NOT NULL,
-    source_id integer NOT NULL,
+    source_id integer,
     invoker_id integer
 );
 
@@ -515,6 +516,14 @@ ALTER TABLE ONLY events
 
 ALTER TABLE ONLY events
     ADD CONSTRAINT events_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: events events_source_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY events
+    ADD CONSTRAINT events_source_id_fkey FOREIGN KEY (source_id) REFERENCES posts(id) ON DELETE CASCADE;
 
 
 --

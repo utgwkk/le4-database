@@ -408,11 +408,11 @@ def follow():
             SELECT
                 id AS receiver_id,
                 event_type('follow') AS type,
-                %s AS source_id,
+                NULL AS source_id,
                 %s AS invoker_id
             FROM users
             WHERE username = %s
-            ''', (session['user_id'], session['user_id'], username))
+            ''', (session['user_id'], username))
         except psycopg2.Error as err:
             if err.pgcode == psycopg2.errorcodes.NOT_NULL_VIOLATION:
                 abort(400)
@@ -600,10 +600,6 @@ def delete_post(post_id):
             abort(403)
 
         cursor.execute('DELETE FROM posts WHERE id = %s', (post_id,))
-        cursor.execute('''
-        DELETE FROM events
-        WHERE type = 'post' AND source_id = %s
-        ''', (post_id,))
 
     flash('Delete successful', 'info')
     return redirect(url_for('index'))
