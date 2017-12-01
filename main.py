@@ -627,11 +627,11 @@ def post_comment(post_id):
             SELECT
                 user_id AS receiver_id,
                 event_type('comment') AS type,
-                LASTVAL() AS source_id,
+                %s AS source_id,
                 %s AS invoker_id
             FROM posts
             WHERE id = %s
-            ''', (session['user_id'], post_id))
+            ''', (post_id, session['user_id'], post_id))
         except psycopg2.Error as err:
             if err.pgcode == psycopg2.errorcodes.FOREIGN_KEY_VIOLATION:
                 abort(400)
