@@ -1,5 +1,5 @@
 <li class="list-group-item">
-  <h4 class="list-group-item-heading"><a href="{{ url_for('show_post', id=post['id']) }}">{{ post['title'] }}</a>
+  <h4 class="list-group-item-heading"><a href="{{ url_for('show_post', post_id=post['id']) }}">{{ post['title'] }}</a>
     {% if post['favorites_count'] > 0 %}
     (❤️ by {{ post['favorites_count'] }} users)
     {% endif %}

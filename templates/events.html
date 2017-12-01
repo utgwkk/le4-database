@@ -11,11 +11,11 @@
           {% endif %}
           <a href="{{ url_for('userpage', username=event['username']) }}">@{{ event['username'] }}</a> 
           {% if event['type'] == 'post' %}
-            posted <a href="{{ url_for('show_post', id=event['source_id']) }}">{{ event['title'] }}</a>.
+            posted <a href="{{ url_for('show_post', post_id=event['source_id']) }}">{{ event['title'] }}</a>.
           {% elif event['type'] == 'favorite' %}
-            favorited <a href="{{ url_for('show_post', id=event['source_id']) }}">{{ event['title'] }}</a>.
+            favorited <a href="{{ url_for('show_post', post_id=event['source_id']) }}">{{ event['title'] }}</a>.
           {% elif event['type'] == 'comment' %}
-            posted a comment on  <a href="{{ url_for('show_post', id=event['source_id']) }}">{{ event['title'] }}</a>.
+            posted a comment on  <a href="{{ url_for('show_post', post_id=event['source_id']) }}">{{ event['title'] }}</a>.
           {% elif event['type'] == 'follow' %}
             followed you.
           {% endif %}
