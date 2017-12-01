@@ -1,11 +1,11 @@
 import os
 import random
 import glob
+from functools import wraps
+from hashlib import sha256
 import psycopg2
 import psycopg2.extras
 import psycopg2.errorcodes
-from functools import wraps
-from hashlib import sha256
 from dotenv import load_dotenv, find_dotenv
 from flask import (
     Flask,
