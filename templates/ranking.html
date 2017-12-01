@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block body %}
+<h2>Favorite ranking</h2>
+<ul class="list-group">
+  {% for post in posts %}
+    {% include "_post.html" %}
+  {% endfor %}
+</ul>
+{% endblock %}

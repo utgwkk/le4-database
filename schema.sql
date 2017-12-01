@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 10.0
--- Dumped by pg_dump version 10.0
+-- Dumped from database version 10.1
+-- Dumped by pg_dump version 10.1
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -55,8 +55,9 @@ ALTER TABLE public.comments ALTER COLUMN id DROP DEFAULT;
 DROP SEQUENCE public.users_id_seq;
 DROP TABLE public.users;
 DROP TABLE public.relations;
-DROP VIEW public.posts_with_full_info;
 DROP SEQUENCE public.posts_id_seq;
+DROP MATERIALIZED VIEW public.posts_favorite_ranking;
+DROP VIEW public.posts_with_full_info;
 DROP TABLE public.posts;
 DROP TABLE public.favorites;
 DROP SEQUENCE public.events_id_seq;
@@ -231,6 +232,38 @@ CREATE TABLE posts (
 
 
 --
+-- Name: posts_with_full_info; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW posts_with_full_info AS
+SELECT
+    NULL::integer AS id,
+    NULL::integer AS user_id,
+    NULL::text AS title,
+    NULL::text AS description,
+    NULL::text AS path,
+    NULL::character varying(32) AS username,
+    NULL::bigint AS favorites_count;
+
+
+--
+-- Name: posts_favorite_ranking; Type: MATERIALIZED VIEW; Schema: public; Owner: -
+--
+
+CREATE MATERIALIZED VIEW posts_favorite_ranking AS
+ SELECT posts_with_full_info.id,
+    posts_with_full_info.user_id,
+    posts_with_full_info.title,
+    posts_with_full_info.description,
+    posts_with_full_info.path,
+    posts_with_full_info.username,
+    posts_with_full_info.favorites_count
+   FROM posts_with_full_info
+  ORDER BY posts_with_full_info.favorites_count DESC, posts_with_full_info.id
+  WITH NO DATA;
+
+
+--
 -- Name: posts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -248,21 +281,6 @@ CREATE SEQUENCE posts_id_seq
 --
 
 ALTER SEQUENCE posts_id_seq OWNED BY posts.id;
-
-
---
--- Name: posts_with_full_info; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW posts_with_full_info AS
-SELECT
-    NULL::integer AS id,
-    NULL::integer AS user_id,
-    NULL::text AS title,
-    NULL::text AS description,
-    NULL::text AS path,
-    NULL::character varying(32) AS username,
-    NULL::bigint AS favorites_count;
 
 
 --

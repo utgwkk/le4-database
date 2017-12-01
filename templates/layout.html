@@ -41,6 +41,9 @@
             <a href="{{ url_for('register_user') }}">register</a>
           </li>
           {% endif %}
+          <li class="nav-item">
+            <a href="{{ url_for('posts_ranking') }}">ranking</a>
+          </li>
           <form class="navbar-form navbar-left" role="search" action="{{ url_for('search_posts') }}">
             <div class="form-group">
               <input type="text" name="query" class="form-control" placeholder="Search" value="{{ query }}">

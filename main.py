@@ -544,6 +544,18 @@ def search_posts():
     return render_template('posts.html', posts=posts, query=query)
 
 
+@app.route('/posts/ranking')
+def posts_ranking():
+    with db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT *
+            FROM posts_favorite_ranking
+        ''')
+    posts = cursor.fetchall()
+    return render_template('ranking.html', posts=posts)
+
+
 @app.route('/post/<int:post_id>')
 def show_post(post_id):
     with db() as conn:
