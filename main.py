@@ -64,6 +64,7 @@ def passhash(password, salt):
 class ValidationError(Exception):
     def __init__(self, message):
         self.message = message
+        super(ValidationError, self).__init__(message)
 
 
 def validate_user_params(username, password):
