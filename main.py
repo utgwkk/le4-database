@@ -9,7 +9,6 @@ import psycopg2.errorcodes
 from dotenv import load_dotenv, find_dotenv
 from flask import (
     Flask,
-    Response,
     abort,
     flash,
     g,
@@ -193,14 +192,14 @@ def calculate_count_info(user_id):
     return c.fetchone()
 
 
-def must_login(f):
-    @wraps(f)
+def must_login(func):
+    @wraps(func)
     def _inner(*args, **kwargs):
         if not logged_in():
             flash('You are not logged in', 'info')
             return redirect(url_for('login'))
         else:
-            return f(*args, **kwargs)
+            return func(*args, **kwargs)
     return _inner
 
 
