@@ -3,6 +3,11 @@
   <div class="jumbotron">
     <h1>Welcome to Suxiv</h1>
     <p>Illustration communication service</p>
+    {% if not logged_in() %}
+    <form action="{{ url_for('register_user') }}" method="get">
+      <input type="submit" value="Join us" class="btn btn-primary btn-lg">
+    </form>
+    {% endif %}
   </div>
   <div>
     <h2>Uploaded recently</h2>
