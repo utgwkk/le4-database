@@ -5,3 +5,13 @@
 * PostgreSQL 10.0
 * Python 3.6
 * pipenv
+
+## Setup
+
+```console
+$ psql -d [dbname] < schema.sql
+$ pipenv install
+$ cp .env.example .env
+$ vim .env
+$ FLASK_APP=main.py pipenv run flask run
+```
